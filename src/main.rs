@@ -2,6 +2,7 @@ mod client;
 mod keys;
 mod patat_connection;
 mod server;
+mod handshake;
 
 use clap::Command;
 
@@ -23,7 +24,8 @@ fn main() {
         }
         Some(("client", _subcommand_matches)) => {
             println!("Starting the UPD client...");
-            client::run_client(builder, client_keypair, server_keypair.public)
+	    let patat_client = client::Client::new();
+            patat_client.run_client()
                 .expect("Something went wrong on the client");
         }
         None => {
