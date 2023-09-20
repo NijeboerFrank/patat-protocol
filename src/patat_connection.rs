@@ -6,14 +6,18 @@ pub struct PatatConnection {
 }
 
 impl PatatConnection {
-
     pub fn new(peer_address: String, listening_port: u16) -> Self {
         let socket = UdpSocket::bind(format!("127.0.0.1:{}", listening_port)).unwrap();
-        PatatConnection { peer_address , socket }
+        PatatConnection {
+            peer_address,
+            socket,
+        }
     }
 
     pub fn send_data(&self, message_buffer: &[u8]) -> std::io::Result<()> {
-        self.socket.connect(&self.peer_address).expect("Couldn't connect");
+        self.socket
+            .connect(&self.peer_address)
+            .expect("Couldn't connect");
         let message_length_buffer = [
             (message_buffer.len() >> 8) as u8,
             (message_buffer.len() & 0xff) as u8,
@@ -33,4 +37,3 @@ impl PatatConnection {
         Ok(message)
     }
 }
-

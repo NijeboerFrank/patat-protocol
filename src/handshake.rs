@@ -1,16 +1,16 @@
-use snow::{Builder, TransportState};
+use snow::{Builder, TransportState, Keypair};
 
 use crate::patat_connection::PatatConnection;
 
 pub fn run_client_handshake(
     protocol_builder: Builder,
-    client_static_key: Vec<u8>,
-    server_static_key: Vec<u8>,
+    client_keypair: &Keypair,
+    server_keypair: &Keypair,
     connection: &PatatConnection,
 ) -> TransportState {
     let mut handshake_state = protocol_builder
-        .local_private_key(&client_static_key)
-        .remote_public_key(&server_static_key)
+        .local_private_key(&client_keypair.private)
+        .remote_public_key(&server_keypair.public)
         .build_initiator()
         .expect("Could not start protocol");
 
@@ -38,12 +38,12 @@ pub fn run_client_handshake(
 
 pub fn run_server_handshake(
     protocol_builder: Builder,
-    server_static_key: Vec<u8>,
+    server_keypair: &Keypair,
     connection: &PatatConnection,
 ) -> TransportState {
     // Setup the handshake protocol
     let mut protocol = protocol_builder
-        .local_private_key(&server_static_key)
+        .local_private_key(&server_keypair.private)
         .build_responder()
         .expect("Could not start protocol");
 

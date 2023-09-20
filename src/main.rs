@@ -1,10 +1,13 @@
 mod client;
-mod keys;
+mod handshake;
+mod patat_participant;
 mod patat_connection;
 mod server;
-mod handshake;
+mod merkle_tree;
 
 use clap::Command;
+
+use crate::patat_participant::PatatParticipant;
 
 fn main() {
     let command = Command::new("patat-protocol")
@@ -14,18 +17,19 @@ fn main() {
         .about("The PATAT protocol CLI")
         .get_matches();
 
-    let (builder, client_keypair, server_keypair) =
-        keys::get_keys().expect("Could not generate keys!");
-
     match command.subcommand() {
         Some(("server", _subcommand_matches)) => {
             println!("Starting the UDP server...");
-            server::run_server(builder, server_keypair);
+            let patat_server = server::Server::new();
+            patat_server
+                .run_server()
+                .expect("Something went wrong on the server");
         }
         Some(("client", _subcommand_matches)) => {
             println!("Starting the UPD client...");
-	    let patat_client = client::Client::new();
-            patat_client.run_client()
+            let patat_client = client::Client::new(server::Server::read_keys_from_file().unwrap());
+            patat_client
+                .run_client()
                 .expect("Something went wrong on the client");
         }
         None => {
@@ -36,4 +40,3 @@ fn main() {
         }
     };
 }
-
