@@ -1,2 +1,5 @@
 target
 .buildconfig
+
+*.key
+*.key.pub
