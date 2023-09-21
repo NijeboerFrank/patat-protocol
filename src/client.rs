@@ -1,5 +1,5 @@
 use anyhow::Result;
-use snow::{Builder, Keypair};
+use snow::{Builder, Keypair, TransportState};
 
 use crate::{
     handshake,
@@ -9,6 +9,8 @@ use crate::{
 
 pub struct Client {
     protocol_builder: Option<Builder<'static>>,
+    transport: Option<TransportState>,
+    connection: Option<PatatConnection>,
     client_key: Keypair,
     server_key: Keypair,
 }
@@ -18,6 +20,8 @@ impl Client {
         let (protocol_builder, client_key) = Self::setup().unwrap();
         Client {
             protocol_builder: Some(protocol_builder),
+	    transport: None,
+	    connection: None,
             client_key,
 	    server_key,
         }
@@ -35,9 +39,8 @@ impl Client {
             &self.server_key,
             &connection,
         );
-        let mut message_buf = vec![0u8; 65535];
-        let message_len = transport.write_message(b"hello", &mut message_buf).unwrap();
-        connection.send_data(&message_buf[..message_len]).unwrap();
+
+	self.transfer_message(b"hello", &mut transport, &connection).unwrap();
         Ok(())
     }
 }
