@@ -1,29 +1,23 @@
 use anyhow::Result;
-use snow::{Builder, Keypair, TransportState};
+use snow::TransportState;
+use snow::{Builder, Keypair};
 
-use crate::{
-    handshake,
-    patat_participant::PatatParticipant,
-    patat_connection::PatatConnection,
-};
+use crate::merkle_tree;
+use crate::{patat_connection::PatatConnection, patat_participant::PatatParticipant};
 
 pub struct Client {
     protocol_builder: Option<Builder<'static>>,
-    transport: Option<TransportState>,
-    connection: Option<PatatConnection>,
-    client_key: Keypair,
-    server_key: Keypair,
+    client_keypair: Keypair,
+    server_keypair: Keypair,
 }
 
 impl Client {
-    pub fn new(server_key: Keypair) -> Self {
-        let (protocol_builder, client_key) = Self::setup().unwrap();
+    pub fn new(server_keypair: Keypair) -> Self {
+        let (protocol_builder, client_keypair) = Self::setup().unwrap();
         Client {
             protocol_builder: Some(protocol_builder),
-	    transport: None,
-	    connection: None,
-            client_key,
-	    server_key,
+            client_keypair,
+            server_keypair,
         }
     }
 
@@ -32,16 +26,49 @@ impl Client {
         let connection = PatatConnection::new("127.0.0.1:5072".to_owned(), 5071);
 
         // Now we can go to the Transport mode since the handshake is done
-        let builder = self.protocol_builder.take().unwrap();
-        let mut transport = handshake::run_client_handshake(
-            builder,
-            &self.client_key,
-            &self.server_key,
-            &connection,
-        );
+        let mut transport = self.run_handshake(&connection);
 
-	self.transfer_message(b"hello", &mut transport, &connection).unwrap();
+        self.transfer_message(b"hello", &mut transport, &connection)
+            .unwrap();
+        let message = self.receive_message(&mut transport, &connection).unwrap();
+        println!("{:?}", String::from_utf8_lossy(&message));
+
+	let (merkle_root, merkle_proof) = merkle_tree::build_evidence().unwrap();
+
+	self.transfer_message(&merkle_root, &mut transport, &connection).unwrap();
+	self.transfer_message(&merkle_proof, &mut transport, &connection).unwrap();
         Ok(())
+    }
+
+    fn run_handshake(&mut self, connection: &PatatConnection) -> TransportState {
+        let mut handshake_state = self
+            .protocol_builder
+            .take()
+            .unwrap()
+            .local_private_key(&self.client_keypair.private)
+            .remote_public_key(&self.server_keypair.public)
+            .build_initiator()
+            .expect("Could not start protocol");
+
+        // -> e, es
+        let mut buf = vec![0u8; 65535];
+        let message_len = handshake_state.write_message(&[0], &mut buf).unwrap();
+        connection.send_data(&buf[..message_len]).unwrap();
+
+        // <- e, ee
+        let message = connection.receive_data().unwrap();
+        let mut payload_buffer = vec![0u8; 65535];
+        let _payload_length = handshake_state
+            .read_message(&message, &mut payload_buffer)
+            .unwrap();
+
+        // -> s, se
+        let mut buf = vec![0u8; 65535];
+        let message_len = handshake_state.write_message(&[2], &mut buf).unwrap();
+        connection.send_data(&buf[..message_len]).unwrap();
+
+        // Now we can go to the Transport mode since the handshake is done
+        handshake_state.into_transport_mode().unwrap()
     }
 }
 
@@ -51,6 +78,6 @@ impl PatatParticipant for Client {
     }
 
     fn keypair(&self) -> &Keypair {
-	&self.client_key
+        &self.client_keypair
     }
 }

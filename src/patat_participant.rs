@@ -10,7 +10,7 @@ use crate::patat_connection::PatatConnection;
 
 pub trait PatatParticipant {
     fn setup() -> Result<(Builder<'static>, Keypair), &'static str> {
-        let params: NoiseParams = "Noise_XK_25519_ChaChaPoly_BLAKE2s".parse().unwrap();
+        let params: NoiseParams = "Noise_XK_25519_AESGCM_SHA256".parse().unwrap();
         let builder = Builder::new(params);
 
         let keypair = match Self::read_keys_from_file() {
@@ -26,19 +26,28 @@ pub trait PatatParticipant {
 
     fn keypair(&self) -> &Keypair;
 
-    fn transfer_message(&self, message: &[u8], transport: &mut TransportState, connection: &PatatConnection) -> Result<()> {
-	let mut message_buf = vec![0u8; 65535];
+    fn transfer_message(
+        &self,
+        message: &[u8],
+        transport: &mut TransportState,
+        connection: &PatatConnection,
+    ) -> Result<()> {
+        let mut message_buf = vec![0u8; 65535];
         let message_len = transport.write_message(message, &mut message_buf).unwrap();
         connection.send_data(&message_buf[..message_len]).unwrap();
-	Ok(())
+        Ok(())
     }
 
-    fn receive_message(&self, transport: &mut TransportState, connection: &PatatConnection) -> Result<Vec<u8>> {
-	let mut message_buf = vec![0u8; 65535];
+    fn receive_message(
+        &self,
+        transport: &mut TransportState,
+        connection: &PatatConnection,
+    ) -> Result<Vec<u8>> {
+        let mut message_buf = vec![0u8; 65535];
         let response = connection.receive_data()?;
-	let message_length = transport.read_message(&response, &mut message_buf)?;
-	let response = &message_buf[..message_length];
-	Ok(response.to_vec())
+        let message_length = transport.read_message(&response, &mut message_buf)?;
+        let response = &message_buf[..message_length];
+        Ok(response.to_vec())
     }
 
     fn read_keys_from_file() -> Option<Keypair> {
@@ -49,7 +58,7 @@ pub trait PatatParticipant {
             Err(_) => return None,
         };
 
-        let mut private = vec!();
+        let mut private = vec![];
         if file.read_to_end(&mut private).is_err() {
             return None;
         }
@@ -60,7 +69,7 @@ pub trait PatatParticipant {
             Err(_) => return None,
         };
 
-        let mut public = vec!();
+        let mut public = vec![];
         if file.read_to_end(&mut public).is_err() {
             return None;
         };
@@ -72,16 +81,25 @@ pub trait PatatParticipant {
         // Write the private key to a file
         let (private_key_file, public_key_file) = Self::key_filenames();
         let path = Path::new(private_key_file);
-        let mut file = OpenOptions::new().read(true).write(true).truncate(true).create(true).open(path)?;
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(path)?;
         file.write_all(&self.keypair().private)?;
-	file.flush()?;
+        file.flush()?;
 
         // Write the public key to a file
         let path = Path::new(public_key_file);
-        let mut file = OpenOptions::new().read(true).write(true).truncate(true).create(true).open(path)?;
-	println!("Size {}", &self.keypair().public.len());
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(path)?;
         file.write_all(&self.keypair().public)?;
-	file.flush()?;
+        file.flush()?;
 
         Ok(())
     }
