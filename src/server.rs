@@ -1,7 +1,7 @@
 use anyhow::Result;
 use snow::{Builder, Keypair, TransportState};
 
-use crate::{patat_connection::PatatConnection, patat_participant::PatatParticipant, merkle_tree};
+use crate::{merkle_tree, patat_connection::PatatConnection, patat_participant::PatatParticipant};
 
 pub struct Server {
     protocol_builder: Option<Builder<'static>>,
@@ -28,20 +28,20 @@ impl Server {
         self.transfer_message(b"hello", &mut transport, &connection)
             .unwrap();
 
-	let merkle_root = self.receive_message(&mut transport, &connection).unwrap();
-	let merkle_proof = self.receive_message(&mut transport, &connection).unwrap();
+        let merkle_root = self.receive_message(&mut transport, &connection).unwrap();
+        let merkle_proof = self.receive_message(&mut transport, &connection).unwrap();
 
-	let valid = merkle_tree::is_valid(merkle_root, merkle_proof);
-	println!("Merkle proof is {}", valid);
+        let valid = merkle_tree::is_valid(merkle_root, merkle_proof);
+        println!("Merkle proof is {}", valid);
         Ok(())
     }
 
-    fn run_handshake(
-        &mut self,
-        connection: &PatatConnection,
-    ) -> TransportState {
+    fn run_handshake(&mut self, connection: &PatatConnection) -> TransportState {
         // Setup the handshake protocol
-        let mut protocol = self.protocol_builder.take().unwrap()
+        let mut protocol = self
+            .protocol_builder
+            .take()
+            .unwrap()
             .local_private_key(&self.server_keypair.private)
             .build_responder()
             .expect("Could not start protocol");

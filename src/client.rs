@@ -2,6 +2,7 @@ use anyhow::Result;
 use snow::TransportState;
 use snow::{Builder, Keypair};
 
+use crate::evidence::{DefaultEvidence, Evidence};
 use crate::merkle_tree;
 use crate::{patat_connection::PatatConnection, patat_participant::PatatParticipant};
 
@@ -28,15 +29,22 @@ impl Client {
         // Now we can go to the Transport mode since the handshake is done
         let mut transport = self.run_handshake(&connection);
 
-        self.transfer_message(b"hello", &mut transport, &connection)
-            .unwrap();
+        let merkle_proof = DefaultEvidence::new();
+        self.transfer_message(
+            &merkle_proof.build_root().unwrap(),
+            &mut transport,
+            &connection,
+        )
+        .unwrap();
         let message = self.receive_message(&mut transport, &connection).unwrap();
         println!("{:?}", String::from_utf8_lossy(&message));
 
-	let (merkle_root, merkle_proof) = merkle_tree::build_evidence().unwrap();
+        let (merkle_root, merkle_proof) = merkle_tree::build_evidence().unwrap();
 
-	self.transfer_message(&merkle_root, &mut transport, &connection).unwrap();
-	self.transfer_message(&merkle_proof, &mut transport, &connection).unwrap();
+        self.transfer_message(&merkle_root, &mut transport, &connection)
+            .unwrap();
+        self.transfer_message(&merkle_proof, &mut transport, &connection)
+            .unwrap();
         Ok(())
     }
 

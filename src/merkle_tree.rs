@@ -37,7 +37,7 @@ pub fn is_valid(merkle_root: Vec<u8>, proof_bytes: Vec<u8>) -> bool {
 
     let indices_to_prove = vec![3, 4];
     let leaves_to_prove = leaves.get(3..5).unwrap();
-    
+
     // Parse proof back on the client
     let proof = MerkleProof::<Sha256>::try_from(proof_bytes.clone()).unwrap();
     let merkle_root: [u8; 32] = merkle_root.try_into().unwrap();
@@ -58,6 +58,6 @@ mod tests {
     #[test]
     fn it_works() {
         let (merkle_root, proof_bytes) = build_evidence().unwrap();
-	assert!(is_valid(merkle_root, proof_bytes));
+        assert!(is_valid(merkle_root, proof_bytes));
     }
 }
