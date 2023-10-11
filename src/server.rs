@@ -1,7 +1,7 @@
 use anyhow::Result;
 use snow::{Builder, Keypair, TransportState};
 
-use crate::{merkle_tree, patat_connection::PatatConnection, patat_participant::PatatParticipant};
+use crate::{patat_connection::PatatConnection, patat_participant::PatatParticipant, evidence_tree::EvidenceTree, evidence::DefaultEvidence};
 
 pub struct Server {
     protocol_builder: Option<Builder<'static>>,
@@ -28,10 +28,14 @@ impl Server {
         self.transfer_message(b"hello", &mut transport, &connection)
             .unwrap();
 
-        let merkle_root = self.receive_message(&mut transport, &connection).unwrap();
         let merkle_proof = self.receive_message(&mut transport, &connection).unwrap();
 
-        let valid = merkle_tree::is_valid(merkle_root, merkle_proof);
+        let evidence1 = DefaultEvidence::new();
+	let evidence2 = DefaultEvidence::new();
+	let mut evidence_tree = EvidenceTree::new(vec![&evidence1, &evidence2]);
+
+	let valid = evidence_tree.prove_subtree(merkle_proof).unwrap();
+	
         println!("Merkle proof is {}", valid);
         Ok(())
     }

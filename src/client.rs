@@ -3,7 +3,8 @@ use snow::TransportState;
 use snow::{Builder, Keypair};
 
 use crate::evidence::{DefaultEvidence, Evidence};
-use crate::merkle_tree;
+use crate::evidence_tree::EvidenceTree;
+
 use crate::{patat_connection::PatatConnection, patat_participant::PatatParticipant};
 
 pub struct Client {
@@ -39,11 +40,13 @@ impl Client {
         let message = self.receive_message(&mut transport, &connection).unwrap();
         println!("{:?}", String::from_utf8_lossy(&message));
 
-        let (merkle_root, merkle_proof) = merkle_tree::build_evidence().unwrap();
+	let evidence1 = DefaultEvidence::new();
+	let evidence2 = DefaultEvidence::new();
+	let mut evidence_tree = EvidenceTree::new(vec![&evidence1, &evidence2]);
+	
+        let merkle_proof = &evidence_tree.get_proof(&vec![0]).unwrap();
 
-        self.transfer_message(&merkle_root, &mut transport, &connection)
-            .unwrap();
-        self.transfer_message(&merkle_proof, &mut transport, &connection)
+        self.transfer_message(merkle_proof, &mut transport, &connection)
             .unwrap();
         Ok(())
     }

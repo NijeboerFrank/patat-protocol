@@ -49,15 +49,3 @@ pub fn is_valid(merkle_root: Vec<u8>, proof_bytes: Vec<u8>) -> bool {
     )
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::merkle_tree::is_valid;
-
-    use super::build_evidence;
-
-    #[test]
-    fn it_works() {
-        let (merkle_root, proof_bytes) = build_evidence().unwrap();
-        assert!(is_valid(merkle_root, proof_bytes));
-    }
-}
