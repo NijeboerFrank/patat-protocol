@@ -1,3 +1,5 @@
-# patat-protocol
+# PATAT Library
 
-A description of this project.
+This project implements a Rust library for using PATAT (Protocol for ATtestion
+in Arm TrustZone).
+

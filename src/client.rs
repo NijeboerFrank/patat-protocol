@@ -1,12 +1,28 @@
+use std::default::Default;
+
 use anyhow::Result;
 use snow::TransportState;
 use snow::{Builder, Keypair};
 
-use crate::evidence::{DefaultEvidence, Evidence};
-use crate::evidence_tree::EvidenceTree;
+use crate::evidence::{TestEvidence, Evidence};
+use crate::combined_evidence::CombinedEvidence;
 
 use crate::{patat_connection::PatatConnection, patat_participant::PatatParticipant};
 
+/// Client struct to handle connection with a verification server.
+///
+/// # Example
+/// ```should_panic
+/// # use anyhow::Result;
+/// # use patat_protocol::{client, patat_participant::PatatParticipant, server};
+/// # fn main() -> Result<()> {
+/// #    println!("Starting the UPD client...");
+/// # let server_static_keys = server::Server::read_keys_from_file().unwrap();
+/// let patat_client = client::Client::new(server_static_keys );
+/// patat_client.run_client()?;
+/// #    Ok(())
+/// # }
+/// ```
 pub struct Client {
     protocol_builder: Option<Builder<'static>>,
     client_keypair: Keypair,
@@ -30,7 +46,7 @@ impl Client {
         // Now we can go to the Transport mode since the handshake is done
         let mut transport = self.run_handshake(&connection);
 
-        let merkle_proof = DefaultEvidence::new();
+        let merkle_proof: TestEvidence = Default::default();
         self.transfer_message(
             &merkle_proof.build_root().unwrap(),
             &mut transport,
@@ -40,11 +56,11 @@ impl Client {
         let message = self.receive_message(&mut transport, &connection).unwrap();
         println!("{:?}", String::from_utf8_lossy(&message));
 
-	let evidence1 = DefaultEvidence::new();
-	let evidence2 = DefaultEvidence::new();
-	let mut evidence_tree = EvidenceTree::new(vec![&evidence1, &evidence2]);
-	
-        let merkle_proof = &evidence_tree.get_proof(&vec![0]).unwrap();
+        // let evidence1: TestEvidence = Default::default();
+        // let evidence2: TestEvidence = Default::default();
+        let mut evidence_tree = CombinedEvidence::new();
+
+        let merkle_proof = &evidence_tree.get_proof(&[0]).unwrap();
 
         self.transfer_message(merkle_proof, &mut transport, &connection)
             .unwrap();

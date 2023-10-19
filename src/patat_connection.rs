@@ -23,7 +23,7 @@ impl PatatConnection {
             (message_buffer.len() & 0xff) as u8,
         ];
         self.socket.send(&message_length_buffer)?;
-        self.socket.send(&message_buffer)?;
+        self.socket.send(message_buffer)?;
         Ok(())
     }
 

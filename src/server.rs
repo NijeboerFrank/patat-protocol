@@ -1,7 +1,10 @@
 use anyhow::Result;
 use snow::{Builder, Keypair, TransportState};
 
-use crate::{patat_connection::PatatConnection, patat_participant::PatatParticipant, evidence_tree::EvidenceTree, evidence::DefaultEvidence};
+use crate::{
+    combined_evidence::CombinedEvidence, patat_connection::PatatConnection,
+    patat_participant::PatatParticipant,
+};
 
 pub struct Server {
     protocol_builder: Option<Builder<'static>>,
@@ -30,12 +33,12 @@ impl Server {
 
         let merkle_proof = self.receive_message(&mut transport, &connection).unwrap();
 
-        let evidence1 = DefaultEvidence::new();
-	let evidence2 = DefaultEvidence::new();
-	let mut evidence_tree = EvidenceTree::new(vec![&evidence1, &evidence2]);
+        // let evidence1: TestEvidence = Default::default();
+        // let evidence2: TestEvidence = Default::default();
+        let mut evidence_tree = CombinedEvidence::new();
 
-	let valid = evidence_tree.prove_subtree(merkle_proof).unwrap();
-	
+        let valid = evidence_tree.prove_subtree(merkle_proof).unwrap();
+
         println!("Merkle proof is {}", valid);
         Ok(())
     }
@@ -54,7 +57,7 @@ impl Server {
         let message = &connection.receive_data().expect("Could not receive data");
         let mut payload_buffer = vec![0u8; 65535];
         let _payload_length = protocol
-            .read_message(&message, &mut payload_buffer)
+            .read_message(message, &mut payload_buffer)
             .expect("Couldn't process message");
 
         // <- e, ee
@@ -68,7 +71,7 @@ impl Server {
         let message = &connection.receive_data().expect("Could not receive data");
         let mut payload_buffer = vec![0u8; 65535];
         let _payload_length = protocol
-            .read_message(&message, &mut payload_buffer)
+            .read_message(message, &mut payload_buffer)
             .expect("Couldn't process message");
 
         // Move to transport mode

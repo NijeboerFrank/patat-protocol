@@ -53,7 +53,7 @@ pub trait PatatParticipant {
     fn read_keys_from_file() -> Option<Keypair> {
         let (private_key_file, public_key_file) = Self::key_filenames();
         let path = Path::new(private_key_file);
-        let mut file = match File::open(&path) {
+        let mut file = match File::open(path) {
             Ok(file) => file,
             Err(_) => return None,
         };
@@ -64,7 +64,7 @@ pub trait PatatParticipant {
         }
 
         let path = Path::new(public_key_file);
-        let mut file = match File::open(&path) {
+        let mut file = match File::open(path) {
             Ok(file) => file,
             Err(_) => return None,
         };
