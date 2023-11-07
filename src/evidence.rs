@@ -29,11 +29,11 @@ pub trait Evidence {
     fn size(&self) -> usize;
 
     fn get_leaf(&self, index: usize) -> [u8; 32] {
-	let leaf_values = self.to_leaves();
-	let leaves: Vec<[u8; 32]> = leaf_values.iter().map(|x| Sha256::hash(x)).collect();
-	leaves[index]
+        let leaf_values = self.to_leaves();
+        let leaves: Vec<[u8; 32]> = leaf_values.iter().map(|x| Sha256::hash(x)).collect();
+        leaves[index]
     }
-    
+
     /// Return the root of the merkle tree of the evidence.
     ///
     /// This method uses the bytes, from [`Self::to_leaves()`], and then
@@ -51,11 +51,11 @@ pub trait Evidence {
 
     /// Create a proof for some fields in the evidence.
     fn build_proof(&self, index: usize) -> Vec<u8> {
-	let leaf_values = self.to_leaves();
-	let leaves: Vec<[u8; 32]> = leaf_values.iter().map(|x| Sha256::hash(x)).collect();
-	let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
-	let proof = merkle_tree.proof(&[index]);
-	proof.to_bytes()
+        let leaf_values = self.to_leaves();
+        let leaves: Vec<[u8; 32]> = leaf_values.iter().map(|x| Sha256::hash(x)).collect();
+        let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
+        let proof = merkle_tree.proof(&[index]);
+        proof.to_bytes()
     }
 }
 
@@ -83,6 +83,6 @@ impl Evidence for TestEvidence {
     }
 
     fn size(&self) -> usize {
-	return 2;
+        return 2;
     }
 }

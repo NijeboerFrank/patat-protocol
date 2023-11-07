@@ -18,8 +18,6 @@ fn main() -> Result<()> {
     let leaves_to_prove = evidence1.get_leaf(0);
     let valid = proof2.verify(evidence1.build_root()?, &[0], &[leaves_to_prove], 2);
 
-    println!("{}", valid);
-
     let mut root_evidence_1 = CombinedEvidence::new();
     println!("Root of the tree {:?}", root_evidence_1.tree_root);
     root_evidence_1.insert_evidence(Box::new(evidence1));
@@ -29,7 +27,7 @@ fn main() -> Result<()> {
     println!("Root of the tree {:?}", root_evidence_1.tree_root);
     
     let verifier = Verifier::new();
-    verifier.prove_tree(root_evidence_1.tree_root.unwrap(), root, root, 2);
+    verifier.prove_tree(root_evidence_1.tree_root.unwrap(), root, root.to_vec(), 2)?;
 
     Ok(())
 }

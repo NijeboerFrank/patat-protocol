@@ -12,8 +12,8 @@ pub struct CombinedEvidence {
 
 impl CombinedEvidence {
     pub fn new() -> CombinedEvidence {
-	let tree = MerkleTree::new();
-	let tree_root = tree.root();
+        let tree = MerkleTree::new();
+        let tree_root = tree.root();
         CombinedEvidence {
             tree,
             tree_root,
@@ -23,20 +23,20 @@ impl CombinedEvidence {
     pub fn append_evidence(&mut self, evidence: Vec<Box<dyn Evidence>>) {
         let mut leaves: Vec<[u8; 32]> = evidence.iter().map(|e| e.build_root().unwrap()).collect();
         self.tree.append(&mut leaves);
-	self.tree.commit();
-	self.tree_root = self.tree.root();
+        self.tree.commit();
+        self.tree_root = self.tree.root();
     }
 
     pub fn insert_evidence(&mut self, evidence: Box<dyn Evidence>) {
-	self.tree.insert(evidence.build_root().unwrap());
-	self.tree.commit();
-	self.tree_root = self.tree.root();
+        self.tree.insert(evidence.build_root().unwrap());
+        self.tree.commit();
+        self.tree_root = self.tree.root();
     }
 
     pub fn insert_evidence_root(&mut self, evidence_root: [u8; 32]) {
-	self.tree.insert(evidence_root);
-	self.tree.commit();
-	self.tree_root = self.tree.root();
+        self.tree.insert(evidence_root);
+        self.tree.commit();
+        self.tree_root = self.tree.root();
     }
 
     pub fn get_proof(&mut self, indices: &[usize]) -> Result<Vec<u8>> {

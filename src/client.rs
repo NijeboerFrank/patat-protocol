@@ -4,8 +4,8 @@ use anyhow::Result;
 use snow::TransportState;
 use snow::{Builder, Keypair};
 
-use crate::evidence::{TestEvidence, Evidence};
 use crate::combined_evidence::CombinedEvidence;
+use crate::evidence::{Evidence, TestEvidence};
 
 use crate::{patat_connection::PatatConnection, patat_participant::PatatParticipant};
 
