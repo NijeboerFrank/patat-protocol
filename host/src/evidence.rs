@@ -86,3 +86,37 @@ impl Evidence for TestEvidence {
         return 2;
     }
 }
+
+pub struct TestVerifierEvidence {
+    name: String,
+    key: [u8; 64],
+    version: String,
+}
+
+impl Default for TestVerifierEvidence {
+    fn default() -> Self {
+        Self {
+            name: Default::default(),
+            key: [
+                0, 0, 0, 0, 1, 1, 1, 2, 1, 2, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 1, 1, 1, 1,
+            ],
+            version: String::from("0.0.1"),
+        }
+    }
+}
+
+impl Evidence for TestVerifierEvidence {
+    fn to_leaves(&self) -> Vec<Vec<u8>> {
+        vec![
+            self.name.clone().into(),
+            self.key.into(),
+            self.version.clone().into(),
+        ]
+    }
+
+    fn size(&self) -> usize {
+        return 2;
+    }
+}

@@ -58,12 +58,12 @@ impl Client {
 
         // let evidence1: TestEvidence = Default::default();
         // let evidence2: TestEvidence = Default::default();
-        let mut evidence_tree = CombinedEvidence::new();
+        // let mut evidence_tree = CombinedEvidence::new();
 
-        let merkle_proof = &evidence_tree.get_proof(&[0]).unwrap();
+        // let merkle_proof = &evidence_tree.get_proof(&[0]).unwrap();
 
-        self.transfer_message(merkle_proof, &mut transport, &connection)
-            .unwrap();
+        // self.transfer_message(merkle_proof, &mut transport, &connection)
+        //     .unwrap();
         Ok(())
     }
 

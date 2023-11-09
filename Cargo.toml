@@ -1,9 +1,0 @@
-[package]
-name = "patat-protocol"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-snow = { version = "0.9.2", features=["default-resolver"] }
-anyhow = "1.0"
-rs_merkle = "1.4"

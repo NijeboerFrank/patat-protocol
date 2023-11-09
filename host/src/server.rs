@@ -35,11 +35,11 @@ impl Server {
 
         // let evidence1: TestEvidence = Default::default();
         // let evidence2: TestEvidence = Default::default();
-        let mut evidence_tree = CombinedEvidence::new();
+        // let mut evidence_tree = CombinedEvidence::new();
 
-        let valid = evidence_tree.prove_subtree(merkle_proof).unwrap();
+        // let valid = evidence_tree.prove_subtree(merkle_proof).unwrap();
 
-        println!("Merkle proof is {}", valid);
+        // println!("Merkle proof is {}", valid);
         Ok(())
     }
 
