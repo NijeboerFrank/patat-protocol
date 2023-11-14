@@ -1,21 +1,10 @@
 [package]
-name = "patat-protocol-test-rs"
+name = "patat-protocol-rs"
 version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-snow = { version = "0.6.0", features=["default-resolver"], default-features=false }
-aes-gcm = "=0.10"
-byteorder = "=1.4.0"
-sha2 = "=0.7.0"
-block-buffer = "=0.2.0"
-anyhow = "1.0"
-rs_merkle = "1.4"
-proc-macro2 = "=1.0.32"
-syn = "=1.0.64"
-quote = "=1.0.0"
 libc = "0.2.48"
-patat-protocol-rs = { path = "../patat-protocol-rs" }
 proto = { path = "../proto" }
 optee-teec = { path = "../../../optee-teec" }
 

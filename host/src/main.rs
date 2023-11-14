@@ -20,10 +20,7 @@ use optee_teec::{ParamNone, ParamValue};
 use proto::{UUID, Command};
 use std::default::Default;
 
-use patat_protocol_rs::{evidence::Evidence, evidence::TestEvidence, evidence::TestVerifierEvidence, combined_evidence::CombinedEvidence};
-use rs_merkle::{MerkleProof, algorithms::Sha256};
-
-fn hello_world(session: &mut Session) -> optee_teec::Result<()> {
+fn run_tee(session: &mut Session) -> optee_teec::Result<()> {
     let mut operation = Operation::new(0, ParamNone, ParamNone, ParamNone, ParamNone);
 
     println!("Invoking command");
@@ -36,17 +33,7 @@ fn main() -> optee_teec::Result<()> {
     let uuid = Uuid::parse_str(UUID).unwrap();
     let mut session = ctx.open_session(uuid)?;
 
-    let relying_party_evidence: TestEvidence = Default::default();
-    let verifier_evidence: TestVerifierEvidence = Default::default();
-
-    let mut combined_evidence = CombinedEvidence::new(verifier_evidence.build_root(), relying_party_evidence.build_root());
-    let relying_party_proof = combined_evidence.get_relying_party_proof();
-    let verifier_proof = combined_evidence.get_verifier_proof();
-
-    let valid = CombinedEvidence::prove_verifier(combined_evidence.get_root(), verifier_proof, verifier_evidence.build_root());
-    println!("Proof is {:?}", valid);
-
-    hello_world(&mut session)?;
+    run_tee(&mut session)?;
 
     println!("Success");
     Ok(())
