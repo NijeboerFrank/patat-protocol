@@ -17,11 +17,14 @@
 
 #![no_main]
 
+use std::default::Default;
 use optee_utee::{
     ta_close_session, ta_create, ta_destroy, ta_invoke_command, ta_open_session, trace_println,
 };
 use optee_utee::{Error, ErrorKind, Parameters, Result};
 use proto::Command;
+use patat_protocol_rs::{evidence::Evidence, evidence::TestEvidence, evidence::TestVerifierEvidence, combined_evidence::CombinedEvidence, verifier::Verifier};
+use rs_merkle::{MerkleProof, algorithms::Sha256};
 
 #[ta_create]
 fn create() -> Result<()> {
@@ -45,17 +48,27 @@ fn destroy() {
     trace_println!("[+] TA destroy");
 }
 
+fn attest() {
+    trace_println!("[+] TA Attest");
+    let relying_party_evidence: TestEvidence = Default::default();
+    let verifier_evidence: TestVerifierEvidence = Default::default();
+
+    let mut combined_evidence = CombinedEvidence::new(verifier_evidence.build_root().unwrap(), relying_party_evidence.build_root().unwrap());
+    let relying_party_proof = combined_evidence.get_relying_party_proof();
+    let verifier_proof = combined_evidence.get_verifier_proof().unwrap();
+    let valid = CombinedEvidence::prove_verifier(combined_evidence.get_root(), verifier_proof, verifier_evidence.build_root().unwrap());
+    trace_println!("Proof is {:?}", valid);
+}
+
 #[ta_invoke_command]
 fn invoke_command(cmd_id: u32, params: &mut Parameters) -> Result<()> {
     trace_println!("[+] TA invoke command");
-    let mut values = unsafe { params.0.as_value().unwrap() };
     match Command::from(cmd_id) {
-        Command::IncValue => {
-            values.set_a(values.a() + 100);
+        Command::RunAttested => {
+            attest();
             Ok(())
         }
-        Command::DecValue => {
-            values.set_a(values.a() - 100);
+        Command::RunWithoutAttestation => {
             Ok(())
         }
         _ => Err(Error::new(ErrorKind::BadParameters)),

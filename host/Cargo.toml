@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-snow = { version = "0.6.0", features=["default-resolver"] }
+snow = { version = "0.6.0", features=["default-resolver"], default-features=false }
+aes-gcm = "=0.10"
 byteorder = "=1.4.0"
 sha2 = "=0.7.0"
 block-buffer = "=0.2.0"

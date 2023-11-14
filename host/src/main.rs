@@ -24,16 +24,10 @@ use patat_protocol_rs::{evidence::Evidence, evidence::TestEvidence, evidence::Te
 use rs_merkle::{MerkleProof, algorithms::Sha256};
 
 fn hello_world(session: &mut Session) -> optee_teec::Result<()> {
-    let p0 = ParamValue::new(29, 0, ParamType::ValueInout);
-    let mut operation = Operation::new(0, p0, ParamNone, ParamNone, ParamNone);
+    let mut operation = Operation::new(0, ParamNone, ParamNone, ParamNone, ParamNone);
 
-    println!("original value is {:?}", operation.parameters().0.a());
-
-    session.invoke_command(Command::IncValue as u32, &mut operation)?;
-    println!("inc value is {:?}", operation.parameters().0.a());
-
-    session.invoke_command(Command::DecValue as u32, &mut operation)?;
-    println!("dec value is {:?}", operation.parameters().0.a());
+    println!("Invoking command");
+    session.invoke_command(Command::RunAttested as u32, &mut operation)?;
     Ok(())
 }
 
@@ -51,9 +45,6 @@ fn main() -> optee_teec::Result<()> {
 
     let valid = CombinedEvidence::prove_verifier(combined_evidence.get_root(), verifier_proof, verifier_evidence.build_root().unwrap());
     println!("Proof is {:?}", valid);
-
-
-    println!("Proved 2 things!");
 
     hello_world(&mut session)?;
 

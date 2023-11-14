@@ -10,7 +10,7 @@ use crate::patat_connection::PatatConnection;
 
 pub trait PatatParticipant {
     fn setup() -> Result<(Builder<'static>, Keypair), &'static str> {
-        let params: NoiseParams = "Noise_XK_25519_AESGCM_SHA256".parse().unwrap();
+        let params: NoiseParams = "Noise_XK_25519_ChaChaPoly_SHA256".parse().unwrap();
         let builder = Builder::new(params);
 
         let keypair = match Self::read_keys_from_file() {

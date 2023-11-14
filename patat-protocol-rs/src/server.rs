@@ -45,6 +45,7 @@ impl Server {
 
     fn run_handshake(&mut self, connection: &PatatConnection) -> TransportState {
         // Setup the handshake protocol
+        println!("{:?}", &self.server_keypair.private);
         let mut protocol = self
             .protocol_builder
             .take()
