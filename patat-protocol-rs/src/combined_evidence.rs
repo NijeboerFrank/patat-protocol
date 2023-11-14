@@ -1,4 +1,3 @@
-use anyhow::Result;
 use rs_merkle::{algorithms::Sha256, MerkleTree, MerkleProof};
 
 /// Root Evidence, consisting of multiple [Evidence] structs, for sending
@@ -19,29 +18,29 @@ impl CombinedEvidence {
         self.tree.root().unwrap().into()
     }
 
-    fn get_proof(&mut self, indices: &[usize]) -> Result<Vec<u8>> {
-        Ok(self.tree.proof(indices).to_bytes())
+    fn get_proof(&mut self, indices: &[usize]) -> Vec<u8> {
+        self.tree.proof(indices).to_bytes()
     }
 
-    pub fn get_verifier_proof(&mut self) -> Result<Vec<u8>> {
+    pub fn get_verifier_proof(&mut self) -> Vec<u8> {
         self.get_proof(&[0])
     }
 
-    pub fn get_relying_party_proof(&mut self) -> Result<Vec<u8>> {
+    pub fn get_relying_party_proof(&mut self) -> Vec<u8> {
         self.get_proof(&[1])
     }
 
-    fn prove_subtree(tree_root: [u8; 32], proof: Vec<u8>, value: [u8; 32], subtree_index: usize) -> Result<bool> {
-        let proof = MerkleProof::<Sha256>::from_bytes(proof.as_slice())?;
+    fn prove_subtree(tree_root: [u8; 32], proof: Vec<u8>, value: [u8; 32], subtree_index: usize) -> bool {
+        let proof = MerkleProof::<Sha256>::from_bytes(proof.as_slice()).unwrap();
         let valid_proof: bool = proof.verify(tree_root, &[subtree_index], &[value], 2);
-        Ok(valid_proof)
+        valid_proof
     }
 
-    pub fn prove_verifier(tree_root: [u8; 32], proof: Vec<u8>, value: [u8; 32]) -> Result<bool> {
+    pub fn prove_verifier(tree_root: [u8; 32], proof: Vec<u8>, value: [u8; 32]) -> bool {
         Self::prove_subtree(tree_root, proof, value, 0)
     }
 
-    pub fn prove_relying_party(tree_root: [u8; 32], proof: Vec<u8>, value: [u8; 32]) -> Result<bool> {
+    pub fn prove_relying_party(tree_root: [u8; 32], proof: Vec<u8>, value: [u8; 32]) -> bool {
         Self::prove_subtree(tree_root, proof, value, 1)
     }
 }

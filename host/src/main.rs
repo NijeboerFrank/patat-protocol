@@ -20,7 +20,7 @@ use optee_teec::{ParamNone, ParamValue};
 use proto::{UUID, Command};
 use std::default::Default;
 
-use patat_protocol_rs::{evidence::Evidence, evidence::TestEvidence, evidence::TestVerifierEvidence, combined_evidence::CombinedEvidence, verifier::Verifier};
+use patat_protocol_rs::{evidence::Evidence, evidence::TestEvidence, evidence::TestVerifierEvidence, combined_evidence::CombinedEvidence};
 use rs_merkle::{MerkleProof, algorithms::Sha256};
 
 fn hello_world(session: &mut Session) -> optee_teec::Result<()> {
@@ -39,11 +39,11 @@ fn main() -> optee_teec::Result<()> {
     let relying_party_evidence: TestEvidence = Default::default();
     let verifier_evidence: TestVerifierEvidence = Default::default();
 
-    let mut combined_evidence = CombinedEvidence::new(verifier_evidence.build_root().unwrap(), relying_party_evidence.build_root().unwrap());
+    let mut combined_evidence = CombinedEvidence::new(verifier_evidence.build_root(), relying_party_evidence.build_root());
     let relying_party_proof = combined_evidence.get_relying_party_proof();
-    let verifier_proof = combined_evidence.get_verifier_proof().unwrap();
+    let verifier_proof = combined_evidence.get_verifier_proof();
 
-    let valid = CombinedEvidence::prove_verifier(combined_evidence.get_root(), verifier_proof, verifier_evidence.build_root().unwrap());
+    let valid = CombinedEvidence::prove_verifier(combined_evidence.get_root(), verifier_proof, verifier_evidence.build_root());
     println!("Proof is {:?}", valid);
 
     hello_world(&mut session)?;

@@ -1,7 +1,4 @@
-pub mod client;
 pub mod evidence;
 pub mod combined_evidence;
-pub mod patat_connection;
-pub mod patat_participant;
-pub mod server;
-pub mod verifier;
+
+pub const UUID: &str = &include_str!(concat!(env!("OUT_DIR"), "/uuid.txt"));

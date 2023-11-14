@@ -1,4 +1,3 @@
-use anyhow::Result;
 use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
 
 /// The Evidence trait for implementing custom device Evidence.
@@ -39,14 +38,14 @@ pub trait Evidence {
     /// This method uses the bytes, from [`Self::to_leaves()`], and then
     /// converts all the leaves into hashes and creates a Merkle Tree out of it.
     /// The function then returns the root of the Merkle Tree.
-    fn build_root(&self) -> Result<[u8; 32]> {
+    fn build_root(&self) -> [u8; 32] {
         let leaf_values = self.to_leaves();
         let leaves: Vec<[u8; 32]> = leaf_values.iter().map(|x| Sha256::hash(x)).collect();
 
         let merkle_tree = MerkleTree::<Sha256>::from_leaves(&leaves);
         let merkle_root = merkle_tree.root().unwrap();
 
-        Ok(merkle_root)
+        merkle_root
     }
 
     /// Create a proof for some fields in the evidence.

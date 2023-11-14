@@ -19,6 +19,7 @@
 path = "../../../rust/rust/library/std"
 
 [patch.crates-io]
+patat-protocol-rs = { path = "../patat-protocol-rs" }
 libc =  { path = "../../../rust/libc" }
 compiler_builtins =  { path = "../../../rust/compiler-builtins" }
 rustc-std-workspace-core = { path = "../../../rust/rust/library/rustc-std-workspace-core" }
