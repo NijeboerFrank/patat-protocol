@@ -26,6 +26,9 @@ use proto::Command;
 
 mod hasher;
 mod noise;
+mod x25519;
+
+use noise::DiffieHellman;
 
 fn gather_evidence() -> [u8; 32] {
     use hasher::HashAlgorithm;
@@ -47,6 +50,7 @@ fn gather_evidence() -> [u8; 32] {
 
 fn attest() {
     trace_println!("[+] TA Attest");
+    let _ = DiffieHellman::new();
     gather_evidence();
 }
 

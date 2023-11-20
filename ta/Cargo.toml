@@ -26,6 +26,9 @@ edition = "2018"
 
 [dependencies]
 merkle_light = "0.4.0"
+byteorder = { version = "=1.4.3" }
+curve25519-dalek = { version = "=3.2.1", default-features = false, features = ["u32_backend"] }
+rand_core = { version = "0.6", default-features = false }
 libc = { path = "../../../rust/libc" }
 proto = { path = "../proto" }
 optee-utee-sys = { path = "../../../optee-utee/optee-utee-sys" }
