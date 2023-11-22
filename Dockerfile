@@ -60,3 +60,4 @@ RUN repo init -u https://github.com/OP-TEE/manifest.git -m qemu_v8.xml && repo s
 WORKDIR /optee/build
 RUN make -j2 toolchains
 RUN make -j$(nproc) check
+RUN rm -rf /optee/optee_rust/examples/*

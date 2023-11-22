@@ -106,11 +106,9 @@ impl<'a> From<&'a EphemeralSecret> for PublicKey {
 /// [`EphemeralSecret`] at all times, as that type enforces at compile-time that
 /// secret keys are never reused, which can have very serious security
 /// implications for many protocols.
-#[cfg(feature = "reusable_secrets")]
 #[derive(Clone)]
 pub struct ReusableSecret(pub(crate) Scalar);
 
-#[cfg(feature = "reusable_secrets")]
 impl ReusableSecret {
     /// Perform a Diffie-Hellman key agreement between `self` and
     /// `their_public` key to produce a [`SharedSecret`].
@@ -128,7 +126,6 @@ impl ReusableSecret {
     }
 }
 
-#[cfg(feature = "reusable_secrets")]
 impl<'a> From<&'a ReusableSecret> for PublicKey {
     /// Given an x25519 [`ReusableSecret`] key, compute its corresponding [`PublicKey`].
     fn from(secret: &'a ReusableSecret) -> PublicKey {
