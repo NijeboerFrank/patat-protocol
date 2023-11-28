@@ -3,9 +3,10 @@ use optee_utee::{AlgorithmId, Digest};
 use std::default::Default;
 use std::hash::Hasher;
 use optee_utee::trace_println;
+use proto::HASHLEN;
 
 pub struct HashAlgorithm {
-    pub op: Digest,
+    op: Digest,
 }
 
 impl HashAlgorithm {
@@ -26,7 +27,7 @@ impl Hasher for HashAlgorithm {
     #[inline]
     fn finish(&self) -> u64 {
         trace_println!("[++] Finish called");
-        let mut hash = [0u8; 32];
+        let mut hash = [0u8; HASHLEN];
         let length = self.op.do_final(&[], &mut hash).unwrap();
         let h = &hash[..length];
         trace_println!("{:?}", h);
@@ -40,11 +41,11 @@ impl Default for HashAlgorithm {
     }
 }
 
-impl Algorithm<[u8; 32]> for HashAlgorithm {
+impl Algorithm<[u8; HASHLEN]> for HashAlgorithm {
     #[inline]
-    fn hash(&mut self) -> [u8; 32] {
+    fn hash(&mut self) -> [u8; HASHLEN] {
         trace_println!("[++] Hash called");
-        let mut h = [0u8; 32];
+        let mut h = [0u8; HASHLEN];
         self.op.do_final(&[], &mut h);
         h
     }

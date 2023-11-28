@@ -22,35 +22,60 @@ use optee_utee::{
     ta_close_session, ta_create, ta_destroy, ta_invoke_command, ta_open_session, trace_println,
 };
 use optee_utee::{Error, ErrorKind, Parameters, Result};
-use proto::Command;
+use proto::{Command, HASHLEN};
+
+use crate::noise::{hmac, CipherState, hash};
 
 mod hasher;
 mod noise;
 mod x25519;
 
-use noise::DiffieHellman;
+fn enc_dec() {
+    let mut c1 = CipherState::initialize_key(Some([1u8; 32]));
+    let mut c2 = CipherState::initialize_key(Some([1u8; 32]));
 
-fn gather_evidence() -> [u8; 32] {
+    let cipher = c1.encrypt_with_ad(&[0u8; 32], "test".as_bytes());
+    trace_println!("ciphertext {:?}", &cipher);
+    let plain = c2.decrypt_with_ad(&[0u8; 32], &cipher);
+    trace_println!("plaintext {:?}", &plain);
+}
+
+fn gather_evidence() -> [u8; HASHLEN] {
     use hasher::HashAlgorithm;
+    use merkle_light::hash::Algorithm;
     use std::iter::FromIterator;
+    use std::hash::Hasher;
 
-    let mut h1 = [0u8; 32];
-    let mut h2 = [0u8; 32];
-    let mut h3 = [0u8; 32];
+    enc_dec();
+
+    let mut h1 = [0u8; HASHLEN];
+    let mut h2 = [0u8; HASHLEN];
+    let mut h3 = [0u8; HASHLEN];
     h1[0] = 0x11;
     h2[0] = 0x22;
     h3[0] = 0x33;
 
-    let tree: MerkleTree<[u8; 32], HashAlgorithm> = MerkleTree::from_iter(vec![h1, h2, h3]);
+    let mut hasher = HashAlgorithm::new();
+    hasher.write("test".as_bytes());
+    trace_println!("[+] hash {:?}", hasher.hash());
+
+    trace_println!("[+] other hash {:?}", hash("test".as_bytes()));
+
+    let pass = "testtesttesttesttesttesttesttest".as_bytes();
+    let mut pass_buffer: [u8; 32] = [0u8; 32];
+    pass_buffer.clone_from_slice(&pass);
+
+    trace_println!("[+] hmac {:?}", hmac(&pass_buffer, "test".as_bytes()));
+
+    let tree: MerkleTree<[u8; HASHLEN], HashAlgorithm> = MerkleTree::from_iter(vec![h1, h2, h3]);
     trace_println!("[+] {:?}", tree.root());
 
-    let mut h1 = [0u8; 32];
+    let mut h1 = [0u8; HASHLEN];
     h1
 }
 
 fn attest() {
     trace_println!("[+] TA Attest");
-    let _ = DiffieHellman::new();
     gather_evidence();
 }
 
