@@ -221,22 +221,26 @@ impl HandshakeState {
         state
     }
 
-    pub fn write_message_1(&mut self, payload: &[u8], message_buffer: &mut [u8]) -> usize {
+    /// -> e, es
+    pub fn write_message_1(&mut self, payload: &[u8]) -> Vec<u8> {
+        // e
         let e = EphemeralSecret::new(PatatRng);
         let e_pub = PublicKey::from(&e);
         let e_pub_bytes = e_pub.to_bytes();
-
-        if e_pub_bytes.len() > message_buffer.len() {
-            panic!("error");
-        }
-
         self.symmetric_state.mix_hash(&e_pub_bytes);
 
-        e_pub_bytes.len()
+        // es
+        self.symmetric_state.mix_key(e.diffie_hellman(&self.rs).as_bytes());
 
+        // encrypt payload
+        let ciphertext = self.symmetric_state.encrypt_and_hash(payload);
+        let mut payload_buffer = vec![];
+
+        // build buffer
+        payload_buffer.extend_from_slice(&e_pub_bytes);
+        payload_buffer.extend_from_slice(&ciphertext);
+        payload_buffer
     }
-
-    
 
    // pub fn write_message(&self, payload: &[u8], message_buffer: )
 }

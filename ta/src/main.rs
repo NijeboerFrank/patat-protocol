@@ -85,8 +85,10 @@ fn attest() {
     let mut pubkey = PublicKey::from(&server_secret);
     trace_println!("State");
 
-    let handshake_state = HandshakeState::initialize(ta_secret, pubkey);
+    let mut handshake_state = HandshakeState::initialize(ta_secret, pubkey);
+    let payload = handshake_state.write_message_1("test".as_bytes());
     trace_println!("done");
+    trace_println!("payload {:?}", &payload);
     gather_evidence();
 }
 
