@@ -9,6 +9,7 @@ use chacha20poly1305::aead::{Aead, NewAead, Payload};
 
 use crate::x25519::{EphemeralSecret, PublicKey, ReusableSecret};
 use crate::hasher::HashAlgorithm;
+use crate::random::PatatRng;
 
 pub fn hmac(key: &[u8; HASHLEN], data: &[u8]) -> [u8; HASHLEN] {
     let mut out = [0u8; HASHLEN];
@@ -124,8 +125,10 @@ pub struct SymmetricState {
 impl SymmetricState {
     pub fn initialize_symmetric(protocol_name: &str) -> Self {
         let mut h = [0u8; HASHLEN];
-        h.clone_from_slice(protocol_name.as_bytes());
-        let ck = h.clone();
+        let name_bytes = protocol_name.as_bytes();
+        h[0..name_bytes.len()].copy_from_slice(name_bytes);
+        let mut ck = [0u8; HASHLEN];
+        ck.copy_from_slice(&h);
         let cipher_state = CipherState::initialize_key(None);
         Self {
             cipher_state,
@@ -199,17 +202,41 @@ pub struct HandshakeState {
     re: Option<PublicKey>,
 }
 
-// impl HandshakeState {
 
-//     pub fn initialize(s: ReusableSecret, rs: PublicKey) -> Self {
-//         HandshakeState {
-//             symmetric_state: SymmetricState::initialize_symmetric("PATAT_PROTOCOL"),
-//             s,
-//             e: None,
-//             rs,
-//             re: None,
-//         }
-//     }
 
-//     // pub fn write_message(&self, payload: &[u8], message_buffer: )
-// }
+impl HandshakeState {
+
+    pub fn initialize(s: ReusableSecret, rs: PublicKey) -> Self {
+        let mut state = HandshakeState {
+            symmetric_state: SymmetricState::initialize_symmetric("PATAT_PROTOCOL"),
+            s,
+            e: None,
+            rs,
+            re: None,
+        };
+        // MixHash(prologue)
+        state.symmetric_state.mix_hash("v0.0.1".as_bytes());
+        // MixHash(rs) -> pre-messages
+        state.symmetric_state.mix_hash(rs.as_bytes());
+        state
+    }
+
+    pub fn write_message_1(&mut self, payload: &[u8], message_buffer: &mut [u8]) -> usize {
+        let e = EphemeralSecret::new(PatatRng);
+        let e_pub = PublicKey::from(&e);
+        let e_pub_bytes = e_pub.to_bytes();
+
+        if e_pub_bytes.len() > message_buffer.len() {
+            panic!("error");
+        }
+
+        self.symmetric_state.mix_hash(&e_pub_bytes);
+
+        e_pub_bytes.len()
+
+    }
+
+    
+
+   // pub fn write_message(&self, payload: &[u8], message_buffer: )
+}

@@ -24,11 +24,15 @@ use optee_utee::{
 use optee_utee::{Error, ErrorKind, Parameters, Result};
 use proto::{Command, HASHLEN};
 
-use crate::noise::{hmac, CipherState, hash};
+use crate::x25519::{PublicKey, ReusableSecret};
+
+use crate::noise::{hmac, CipherState, hash, HandshakeState};
+use crate::random::PatatRng;
 
 mod hasher;
 mod noise;
 mod x25519;
+mod random;
 
 fn enc_dec() {
     let mut c1 = CipherState::initialize_key(Some([1u8; 32]));
@@ -76,6 +80,13 @@ fn gather_evidence() -> [u8; HASHLEN] {
 
 fn attest() {
     trace_println!("[+] TA Attest");
+    let mut ta_secret = ReusableSecret::new(PatatRng);
+    let mut server_secret = ReusableSecret::new(PatatRng);
+    let mut pubkey = PublicKey::from(&server_secret);
+    trace_println!("State");
+
+    let handshake_state = HandshakeState::initialize(ta_secret, pubkey);
+    trace_println!("done");
     gather_evidence();
 }
 
