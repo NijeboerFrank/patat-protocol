@@ -33,6 +33,7 @@ mod hasher;
 mod noise;
 mod x25519;
 mod random;
+mod patat_participant;
 
 fn enc_dec() {
     let mut c1 = CipherState::initialize_key(Some([1u8; 32]));

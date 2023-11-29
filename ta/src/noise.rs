@@ -239,7 +239,6 @@ impl HandshakeState {
         let e_pub = PublicKey::from(&e);
         self.e = Some(e);
         let e_pub_bytes = e_pub.to_bytes();
-        trace_println!("DH: {:?}", &e_pub_bytes);
         self.symmetric_state.mix_hash(&e_pub_bytes);
         payload_buffer.extend_from_slice(&e_pub_bytes);
 
@@ -261,7 +260,6 @@ impl HandshakeState {
         // e
         let re_bytes: [u8; 32] = payload[0..DHLEN].try_into().unwrap();
         let re: PublicKey = re_bytes.into();
-        trace_println!("public key: {:?}", &re.as_bytes());
         self.symmetric_state.mix_hash(re.as_bytes());
         self.re = Some(re);
 
@@ -284,7 +282,6 @@ impl HandshakeState {
         let e_pub = PublicKey::from(&e);
         self.e = Some(e);
         let e_pub_bytes = e_pub.to_bytes();
-        trace_println!("DH: {:?}", &e_pub_bytes);
         self.symmetric_state.mix_hash(&e_pub_bytes);
         payload_buffer.extend_from_slice(&e_pub_bytes);
 
@@ -310,7 +307,6 @@ impl HandshakeState {
         // e
         let re_bytes: [u8; 32] = payload[0..DHLEN].try_into().unwrap();
         let re: PublicKey = re_bytes.into();
-        trace_println!("public key: {:?}", &re.as_bytes());
         self.symmetric_state.mix_hash(re.as_bytes());
         self.re = Some(re);
 
@@ -330,7 +326,6 @@ impl HandshakeState {
 
         // s
         let s_pub = PublicKey::from(&self.s);
-        trace_println!("S Pub {:?}", s_pub.as_bytes());
         let encrypted_key = self.symmetric_state.encrypt_and_hash(s_pub.as_bytes());
         payload_buffer.extend_from_slice(&encrypted_key);
 
@@ -351,7 +346,6 @@ impl HandshakeState {
         let rs_bytes: [u8; 32] = self.symmetric_state.decrypt_and_hash(&payload[0..DHLEN + 16]).try_into().unwrap();
         let rs: PublicKey = rs_bytes.into();
         self.rs = Some(rs);
-        trace_println!("S Pub {:?}", self.rs.unwrap().as_bytes());
 
         // se
         self.symmetric_state.mix_key(self.e.as_ref().unwrap().diffie_hellman(&self.rs.unwrap()).as_bytes());
@@ -363,3 +357,4 @@ impl HandshakeState {
         payload_buffer
     }
 }
+
