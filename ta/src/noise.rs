@@ -8,7 +8,7 @@ use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use chacha20poly1305::aead::{Aead, NewAead, Payload};
 use std::convert::TryInto;
 
-use crate::x25519::{EphemeralSecret, PublicKey, ReusableSecret};
+use crate::x25519::{ReusableSecret, PublicKey, StaticSecret};
 use crate::hasher::HashAlgorithm;
 use crate::random::PatatRng;
 
@@ -197,8 +197,8 @@ impl SymmetricState {
 
 pub struct HandshakeState {
     symmetric_state: SymmetricState,
-    s: ReusableSecret,
-    e: Option<EphemeralSecret>,
+    s: StaticSecret,
+    e: Option<ReusableSecret>,
     rs: Option<PublicKey>,
     re: Option<PublicKey>,
 }
@@ -207,7 +207,7 @@ pub struct HandshakeState {
 
 impl HandshakeState {
 
-    pub fn initialize(s: ReusableSecret, rs: Option<PublicKey>) -> Self {
+    pub fn initialize(s: StaticSecret, rs: Option<PublicKey>) -> Self {
         let mut symmetric_state = SymmetricState::initialize_symmetric("PATAT_PROTOCOL");
 
         // MixHash(prologue)
@@ -235,7 +235,7 @@ impl HandshakeState {
         let mut payload_buffer = vec![];
 
         // e
-        let e = EphemeralSecret::new(PatatRng);
+        let e = ReusableSecret::new(PatatRng);
         let e_pub = PublicKey::from(&e);
         self.e = Some(e);
         let e_pub_bytes = e_pub.to_bytes();
@@ -280,7 +280,7 @@ impl HandshakeState {
         let mut payload_buffer = vec![];
 
         // e
-        let e = EphemeralSecret::new(PatatRng);
+        let e = ReusableSecret::new(PatatRng);
         let e_pub = PublicKey::from(&e);
         self.e = Some(e);
         let e_pub_bytes = e_pub.to_bytes();
@@ -321,6 +321,45 @@ impl HandshakeState {
         let plaintext = self.symmetric_state.decrypt_and_hash(&payload[DHLEN..]);
         payload_buffer.extend_from_slice(&plaintext);
 
+        payload_buffer
+    }
+
+    /// -> s, se
+    pub fn write_message_3(&mut self, payload: &[u8]) -> Vec<u8> {
+        let mut payload_buffer = vec![];
+
+        // s
+        let s_pub = PublicKey::from(&self.s);
+        trace_println!("S Pub {:?}", s_pub.as_bytes());
+        let encrypted_key = self.symmetric_state.encrypt_and_hash(s_pub.as_bytes());
+        payload_buffer.extend_from_slice(&encrypted_key);
+
+        // se
+        self.symmetric_state.mix_key(self.s.diffie_hellman(&self.re.unwrap()).as_bytes());
+
+        // encrypt payload
+        let ciphertext = self.symmetric_state.encrypt_and_hash(payload);
+        payload_buffer.extend_from_slice(&ciphertext);
+
+        payload_buffer
+    }
+
+    pub fn read_message_3(&mut self, payload: &[u8]) -> Vec<u8> {
+        let mut payload_buffer = vec![];
+
+        // s
+        let rs_bytes: [u8; 32] = self.symmetric_state.decrypt_and_hash(&payload[0..DHLEN + 16]).try_into().unwrap();
+        let rs: PublicKey = rs_bytes.into();
+        self.rs = Some(rs);
+        trace_println!("S Pub {:?}", self.rs.unwrap().as_bytes());
+
+        // se
+        self.symmetric_state.mix_key(self.e.as_ref().unwrap().diffie_hellman(&self.rs.unwrap()).as_bytes());
+
+        // decrypt payload
+        let plaintext = self.symmetric_state.decrypt_and_hash(&payload[DHLEN + 16..]);
+        payload_buffer.extend_from_slice(&plaintext);
+        
         payload_buffer
     }
 }

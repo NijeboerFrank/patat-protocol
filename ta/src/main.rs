@@ -24,7 +24,7 @@ use optee_utee::{
 use optee_utee::{Error, ErrorKind, Parameters, Result};
 use proto::{Command, HASHLEN};
 
-use crate::x25519::{PublicKey, ReusableSecret};
+use crate::x25519::{PublicKey, ReusableSecret, StaticSecret};
 
 use crate::noise::{hmac, CipherState, hash, HandshakeState};
 use crate::random::PatatRng;
@@ -80,8 +80,8 @@ fn gather_evidence() -> [u8; HASHLEN] {
 
 fn attest() {
     trace_println!("[+] TA Attest");
-    let mut ta_secret = ReusableSecret::new(PatatRng);
-    let mut server_secret = ReusableSecret::new(PatatRng);
+    let mut ta_secret = StaticSecret::new(PatatRng);
+    let mut server_secret = StaticSecret::new(PatatRng);
     let mut pubkey = PublicKey::from(&server_secret);
     trace_println!("State");
 
@@ -95,6 +95,12 @@ fn attest() {
 
     let payload = handshake_state_receiver.write_message_2("test".as_bytes());
     let decrypted = handshake_state.read_message_2(&payload);
+    trace_println!("done again");
+    trace_println!("payload {:?}", &payload);
+    trace_println!("decrypted payload {:?}", &decrypted);
+
+    let payload = handshake_state_receiver.write_message_3("test".as_bytes());
+    let decrypted = handshake_state.read_message_3(&payload);
     trace_println!("done again");
     trace_println!("payload {:?}", &payload);
     trace_println!("decrypted payload {:?}", &decrypted);
