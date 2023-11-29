@@ -67,7 +67,7 @@ pub struct EphemeralSecret(pub(crate) Scalar);
 impl EphemeralSecret {
     /// Perform a Diffie-Hellman key agreement between `self` and
     /// `their_public` key to produce a [`SharedSecret`].
-    pub fn diffie_hellman(self, their_public: &PublicKey) -> SharedSecret {
+    pub fn diffie_hellman(&self, their_public: &PublicKey) -> SharedSecret {
         SharedSecret(self.0 * their_public.0)
     }
 

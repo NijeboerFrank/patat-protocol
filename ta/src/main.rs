@@ -92,6 +92,12 @@ fn attest() {
     trace_println!("done");
     trace_println!("payload {:?}", &payload);
     trace_println!("decrypted payload {:?}", &decrypted);
+
+    let payload = handshake_state_receiver.write_message_2("test".as_bytes());
+    let decrypted = handshake_state.read_message_2(&payload);
+    trace_println!("done again");
+    trace_println!("payload {:?}", &payload);
+    trace_println!("decrypted payload {:?}", &decrypted);
     gather_evidence();
 }
 
