@@ -53,6 +53,7 @@ pub const PRIME: [u8; 256] = [
 ];
 pub const BASE: [u8; 1] = [0x02];
 pub const HASHLEN: usize = 32;
+pub const DHLEN: usize = 32;
 
 /// Key Size in bits
 pub const KEY_SIZE: usize = 2048;

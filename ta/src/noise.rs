@@ -2,10 +2,11 @@ use std::hash::Hasher;
 use optee_utee::{trace_println, Error, ErrorKind, Parameters, Result};
 use optee_utee::{AlgorithmId, AttributeId, AttributeMemref, DeriveKey, Digest, Mac, TransientObject, TransientObjectType};
 use std::ptr;
-use proto::{BASE, KEY_SIZE, PRIME, HASHLEN};
+use proto::{BASE, KEY_SIZE, PRIME, HASHLEN, DHLEN};
 use merkle_light::hash::Algorithm;
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use chacha20poly1305::aead::{Aead, NewAead, Payload};
+use std::convert::TryInto;
 
 use crate::x25519::{EphemeralSecret, PublicKey, ReusableSecret};
 use crate::hasher::HashAlgorithm;
@@ -198,7 +199,7 @@ pub struct HandshakeState {
     symmetric_state: SymmetricState,
     s: ReusableSecret,
     e: Option<EphemeralSecret>,
-    rs: PublicKey,
+    rs: Option<PublicKey>,
     re: Option<PublicKey>,
 }
 
@@ -206,19 +207,27 @@ pub struct HandshakeState {
 
 impl HandshakeState {
 
-    pub fn initialize(s: ReusableSecret, rs: PublicKey) -> Self {
-        let mut state = HandshakeState {
-            symmetric_state: SymmetricState::initialize_symmetric("PATAT_PROTOCOL"),
+    pub fn initialize(s: ReusableSecret, rs: Option<PublicKey>) -> Self {
+        let mut symmetric_state = SymmetricState::initialize_symmetric("PATAT_PROTOCOL");
+
+        // MixHash(prologue)
+        symmetric_state.mix_hash("v0.0.1".as_bytes());
+        // MixHash(rs) -> pre-messages
+        match rs {
+            Some(rs) => symmetric_state.mix_hash(rs.as_bytes()),
+            None => {
+                let s_pub = PublicKey::from(&s);
+                symmetric_state.mix_hash(s_pub.as_bytes());
+            }
+        };
+
+        HandshakeState {
+            symmetric_state,
             s,
             e: None,
             rs,
             re: None,
-        };
-        // MixHash(prologue)
-        state.symmetric_state.mix_hash("v0.0.1".as_bytes());
-        // MixHash(rs) -> pre-messages
-        state.symmetric_state.mix_hash(rs.as_bytes());
-        state
+        }
     }
 
     /// -> e, es
@@ -227,10 +236,11 @@ impl HandshakeState {
         let e = EphemeralSecret::new(PatatRng);
         let e_pub = PublicKey::from(&e);
         let e_pub_bytes = e_pub.to_bytes();
+        trace_println!("DH: {:?}", &e_pub_bytes);
         self.symmetric_state.mix_hash(&e_pub_bytes);
 
         // es
-        self.symmetric_state.mix_key(e.diffie_hellman(&self.rs).as_bytes());
+        self.symmetric_state.mix_key(e.diffie_hellman(&self.rs.unwrap()).as_bytes());
 
         // encrypt payload
         let ciphertext = self.symmetric_state.encrypt_and_hash(payload);
@@ -239,6 +249,29 @@ impl HandshakeState {
         // build buffer
         payload_buffer.extend_from_slice(&e_pub_bytes);
         payload_buffer.extend_from_slice(&ciphertext);
+        payload_buffer
+    }
+
+    /// -> e, es
+    /// But now from the responder's side
+    pub fn read_message_1(&mut self, payload: &[u8]) -> Vec<u8> {
+        // e
+        let re_bytes: [u8; 32] = payload[0..DHLEN].try_into().unwrap();
+        let re: PublicKey = re_bytes.into();
+        trace_println!("public key: {:?}", &re.as_bytes());
+        self.symmetric_state.mix_hash(re.as_bytes());
+        self.re = Some(re);
+
+        // es
+        self.symmetric_state.mix_key(self.s.diffie_hellman(&self.re.unwrap()).as_bytes());
+
+        // decrypt payload
+        let plaintext = self.symmetric_state.decrypt_and_hash(&payload[DHLEN..]);
+        let mut payload_buffer = vec![];
+
+        // build buffer
+        payload_buffer.extend_from_slice(&plaintext);
+               
         payload_buffer
     }
 
