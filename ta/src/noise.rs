@@ -1,21 +1,24 @@
-use optee_utee::{AlgorithmId, AttributeId, AttributeMemref, Mac, TransientObject, TransientObjectType};
+use optee_utee::{
+    trace_println, AlgorithmId, AttributeId, AttributeMemref, Mac, TransientObject,
+    TransientObjectType,
+};
 
-use proto::{HASHLEN, DHLEN};
+use proto::{DHLEN, HASHLEN};
 
 use std::convert::TryInto;
 use std::hash::Hasher;
 
-use merkle_light::hash::Algorithm;
-use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use chacha20poly1305::aead::{Aead, NewAead, Payload};
+use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
+use merkle_light::hash::Algorithm;
 
-use crate::x25519::{ReusableSecret, PublicKey, StaticSecret};
 use crate::hasher::HashAlgorithm;
 use crate::random::PatatRng;
+use crate::x25519::{PublicKey, ReusableSecret, StaticSecret};
 
 pub fn hmac(key: &[u8; HASHLEN], data: &[u8]) -> [u8; HASHLEN] {
     let mut out = [0u8; HASHLEN];
-    
+
     match Mac::allocate(AlgorithmId::HmacSha256, HASHLEN * 8) {
         Err(e) => panic!(e),
         Ok(mac) => {
@@ -25,7 +28,7 @@ pub fn hmac(key: &[u8; HASHLEN], data: &[u8]) -> [u8; HASHLEN] {
                     let attr = AttributeMemref::from_ref(AttributeId::SecretValue, key);
                     key_object.populate(&[attr.into()]).unwrap();
                     mac.set_key(&key_object).unwrap();
-                },
+                }
             };
             mac.init(&[0u8; 0]);
             mac.compute_final(&data, &mut out).unwrap();
@@ -46,14 +49,10 @@ pub struct CipherState {
 }
 
 impl CipherState {
-
     pub fn initialize_key(key: Option<[u8; 32]>) -> Self {
         let k = key;
         let n = 0;
-        Self {
-            k,
-            n,
-        }
+        Self { k, n }
     }
 
     // pub fn has_key(&self) -> bool {
@@ -78,7 +77,7 @@ impl CipherState {
                 let ciphertext = cipher.encrypt(&nonce, payload).unwrap();
                 self.n += 1;
                 ciphertext
-            },
+            }
             None => {
                 let mut ret = vec![0u8; plaintext.len()];
                 ret.clone_from_slice(plaintext);
@@ -107,7 +106,7 @@ impl CipherState {
                 let plaintext = cipher.decrypt(&nonce, payload).unwrap();
                 self.n += 1;
                 plaintext
-            },
+            }
             None => {
                 let mut ret = vec![];
                 ret.extend_from_slice(ciphertext);
@@ -203,15 +202,13 @@ pub struct HandshakeState {
     re: Option<PublicKey>,
 }
 
-
-
 impl HandshakeState {
-
     pub fn initialize(s: StaticSecret, rs: Option<PublicKey>) -> Self {
-        let mut symmetric_state = SymmetricState::initialize_symmetric("PATAT_PROTOCOL");
+        let mut symmetric_state =
+            SymmetricState::initialize_symmetric("Noise_XK_25519_ChaChaPoly_SHA256");
 
         // MixHash(prologue)
-        symmetric_state.mix_hash("v0.0.1".as_bytes());
+        symmetric_state.mix_hash(&[0u8; 0]);
         // MixHash(rs) -> pre-messages
         match rs {
             Some(rs) => symmetric_state.mix_hash(rs.as_bytes()),
@@ -243,7 +240,13 @@ impl HandshakeState {
         payload_buffer.extend_from_slice(&e_pub_bytes);
 
         // es
-        self.symmetric_state.mix_key(self.e.as_ref().unwrap().diffie_hellman(&self.rs.unwrap()).as_bytes());
+        self.symmetric_state.mix_key(
+            self.e
+                .as_ref()
+                .unwrap()
+                .diffie_hellman(&self.rs.unwrap())
+                .as_bytes(),
+        );
 
         // encrypt payload
         let ciphertext = self.symmetric_state.encrypt_and_hash(payload);
@@ -264,7 +267,8 @@ impl HandshakeState {
         self.re = Some(re);
 
         // es
-        self.symmetric_state.mix_key(self.s.diffie_hellman(&self.re.unwrap()).as_bytes());
+        self.symmetric_state
+            .mix_key(self.s.diffie_hellman(&self.re.unwrap()).as_bytes());
 
         // decrypt payload
         let plaintext = self.symmetric_state.decrypt_and_hash(&payload[DHLEN..]);
@@ -287,11 +291,11 @@ impl HandshakeState {
 
         // ee
         self.symmetric_state.mix_key(
-            self
-                .e
+            self.e
                 .as_ref()
                 .unwrap()
-                .diffie_hellman(&self.re.unwrap()).as_bytes()
+                .diffie_hellman(&self.re.unwrap())
+                .as_bytes(),
         );
 
         // encrypt payload
@@ -311,8 +315,14 @@ impl HandshakeState {
         self.re = Some(re);
 
         // ee
-        self.symmetric_state.mix_key(self.e.as_ref().unwrap().diffie_hellman(&self.re.unwrap()).as_bytes());
-        
+        self.symmetric_state.mix_key(
+            self.e
+                .as_ref()
+                .unwrap()
+                .diffie_hellman(&self.re.unwrap())
+                .as_bytes(),
+        );
+
         // decrypt payload
         let plaintext = self.symmetric_state.decrypt_and_hash(&payload[DHLEN..]);
         payload_buffer.extend_from_slice(&plaintext);
@@ -330,7 +340,8 @@ impl HandshakeState {
         payload_buffer.extend_from_slice(&encrypted_key);
 
         // se
-        self.symmetric_state.mix_key(self.s.diffie_hellman(&self.re.unwrap()).as_bytes());
+        self.symmetric_state
+            .mix_key(self.s.diffie_hellman(&self.re.unwrap()).as_bytes());
 
         // encrypt payload
         let ciphertext = self.symmetric_state.encrypt_and_hash(payload);
@@ -343,18 +354,29 @@ impl HandshakeState {
         let mut payload_buffer = vec![];
 
         // s
-        let rs_bytes: [u8; 32] = self.symmetric_state.decrypt_and_hash(&payload[0..DHLEN + 16]).try_into().unwrap();
+        let rs_bytes: [u8; 32] = self
+            .symmetric_state
+            .decrypt_and_hash(&payload[0..DHLEN + 16])
+            .try_into()
+            .unwrap();
         let rs: PublicKey = rs_bytes.into();
         self.rs = Some(rs);
 
         // se
-        self.symmetric_state.mix_key(self.e.as_ref().unwrap().diffie_hellman(&self.rs.unwrap()).as_bytes());
+        self.symmetric_state.mix_key(
+            self.e
+                .as_ref()
+                .unwrap()
+                .diffie_hellman(&self.rs.unwrap())
+                .as_bytes(),
+        );
 
         // decrypt payload
-        let plaintext = self.symmetric_state.decrypt_and_hash(&payload[DHLEN + 16..]);
+        let plaintext = self
+            .symmetric_state
+            .decrypt_and_hash(&payload[DHLEN + 16..]);
         payload_buffer.extend_from_slice(&plaintext);
-        
+
         payload_buffer
     }
 }
-

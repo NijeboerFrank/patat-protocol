@@ -25,23 +25,22 @@ use optee_utee::{Error, ErrorKind, Parameters, Result};
 use proto::{Command, HASHLEN};
 
 // std
-use std::iter::FromIterator;
+use std::convert::TryInto;
 use std::hash::Hasher;
+use std::iter::FromIterator;
 
 // libraries
-use merkle_light::merkle::MerkleTree;
 use merkle_light::hash::Algorithm;
+use merkle_light::merkle::MerkleTree;
 
 // TA Code
-use ta::x25519::{PublicKey, StaticSecret};
-use ta::noise::HandshakeState;
-use ta::random::PatatRng;
 use ta::hasher::HashAlgorithm;
-use ta::patat_participant::PatatRelyingParty;
-
+use ta::noise::HandshakeState;
+use ta::patat_participant::PatatTA;
+use ta::random::PatatRng;
+use ta::x25519::{PublicKey, StaticSecret};
 
 fn gather_evidence() -> [u8; HASHLEN] {
-
     let mut h1 = [0u8; HASHLEN];
     let mut h2 = [0u8; HASHLEN];
     let mut h3 = [0u8; HASHLEN];
@@ -57,36 +56,41 @@ fn gather_evidence() -> [u8; HASHLEN] {
 }
 
 fn attest() {
-    trace_println!("[+] TA Attest");
+    // trace_println!("[+] TA Attest");
+    // let ta_secret = StaticSecret::new(PatatRng);
+    // let server_secret = StaticSecret::new(PatatRng);
+    // let pubkey = PublicKey::from(&server_secret);
+    // trace_println!("State");
+
+    // let mut handshake_state = HandshakeState::initialize(ta_secret, Some(pubkey));
+    // let mut handshake_state_receiver = HandshakeState::initialize(server_secret, None);
+    // let payload = handshake_state.write_message_1("test".as_bytes());
+    // let decrypted = handshake_state_receiver.read_message_1(&payload);
+    // trace_println!("done");
+    // trace_println!("payload {:?}", &payload);
+    // trace_println!("decrypted payload {:?}", &decrypted);
+
+    // let payload = handshake_state_receiver.write_message_2("test".as_bytes());
+    // let decrypted = handshake_state.read_message_2(&payload);
+    // trace_println!("done again");
+    // trace_println!("payload {:?}", &payload);
+    // trace_println!("decrypted payload {:?}", &decrypted);
+
+    // let payload = handshake_state_receiver.write_message_3("test".as_bytes());
+    // let decrypted = handshake_state.read_message_3(&payload);
+    // trace_println!("done again");
+    // trace_println!("payload {:?}", &payload);
+    // trace_println!("decrypted payload {:?}", &decrypted);
+    // gather_evidence();
+
     let ta_secret = StaticSecret::new(PatatRng);
-    let server_secret = StaticSecret::new(PatatRng);
+    let key_bytes: [u8; 32] = "very-secure-password-for-frieten"
+        .as_bytes()
+        .try_into()
+        .unwrap();
+    let server_secret = StaticSecret::from(key_bytes);
     let pubkey = PublicKey::from(&server_secret);
-    trace_println!("State");
-
-    let mut handshake_state = HandshakeState::initialize(ta_secret, Some(pubkey));
-    let mut handshake_state_receiver = HandshakeState::initialize(server_secret, None);
-    let payload = handshake_state.write_message_1("test".as_bytes());
-    let decrypted = handshake_state_receiver.read_message_1(&payload);
-    trace_println!("done");
-    trace_println!("payload {:?}", &payload);
-    trace_println!("decrypted payload {:?}", &decrypted);
-
-    let payload = handshake_state_receiver.write_message_2("test".as_bytes());
-    let decrypted = handshake_state.read_message_2(&payload);
-    trace_println!("done again");
-    trace_println!("payload {:?}", &payload);
-    trace_println!("decrypted payload {:?}", &decrypted);
-
-    let payload = handshake_state_receiver.write_message_3("test".as_bytes());
-    let decrypted = handshake_state.read_message_3(&payload);
-    trace_println!("done again");
-    trace_println!("payload {:?}", &payload);
-    trace_println!("decrypted payload {:?}", &decrypted);
-    gather_evidence();
-
-    let server_secret = StaticSecret::new(PatatRng);
-    let patat_participant = PatatRelyingParty::new(server_secret);
-    patat_participant.connect();
+    PatatTA::connect(ta_secret, pubkey);
 }
 
 #[ta_create]
