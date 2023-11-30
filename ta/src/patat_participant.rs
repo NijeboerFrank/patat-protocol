@@ -1,6 +1,10 @@
-use crate::x25519::{PublicKey, ReusableSecret, StaticSecret};
+use optee_utee::net::UdpSocket;
+use optee_utee::net::TcpStream;
 
-use crate::noise::{hmac, CipherState, hash, HandshakeState};
+use std::io::{Read, Write};
+
+use crate::x25519::{PublicKey, StaticSecret};
+use crate::noise::HandshakeState;
 use crate::random::PatatRng;
 
 
@@ -24,10 +28,15 @@ pub struct PatatRelyingParty {
 
 
 impl PatatRelyingParty {
-    fn new(key: StaticSecret) -> Self {
+    pub fn new(key: StaticSecret) -> Self {
         Self {
             key
         }
+    }
+
+    pub fn connect(&self) {
+        let mut stream = TcpStream::connect("Tatooine", 65432).unwrap();
+        stream.write_all(b"[TA] Hello!").unwrap();
     }
 }
 

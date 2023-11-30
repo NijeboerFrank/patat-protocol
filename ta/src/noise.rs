@@ -1,12 +1,13 @@
+use optee_utee::{AlgorithmId, AttributeId, AttributeMemref, Mac, TransientObject, TransientObjectType};
+
+use proto::{HASHLEN, DHLEN};
+
+use std::convert::TryInto;
 use std::hash::Hasher;
-use optee_utee::{trace_println, Error, ErrorKind, Parameters, Result};
-use optee_utee::{AlgorithmId, AttributeId, AttributeMemref, DeriveKey, Digest, Mac, TransientObject, TransientObjectType};
-use std::ptr;
-use proto::{BASE, KEY_SIZE, PRIME, HASHLEN, DHLEN};
+
 use merkle_light::hash::Algorithm;
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use chacha20poly1305::aead::{Aead, NewAead, Payload};
-use std::convert::TryInto;
 
 use crate::x25519::{ReusableSecret, PublicKey, StaticSecret};
 use crate::hasher::HashAlgorithm;
@@ -55,9 +56,9 @@ impl CipherState {
         }
     }
 
-    pub fn has_key(&self) -> bool {
-        self.k.is_some()
-    }
+    // pub fn has_key(&self) -> bool {
+    //     self.k.is_some()
+    // }
 
     pub fn encrypt_with_ad(&mut self, ad: &[u8; HASHLEN], plaintext: &[u8]) -> Vec<u8> {
         match self.k {
@@ -151,9 +152,9 @@ impl SymmetricState {
         self.h = hash(&concatenation);
     }
 
-    pub fn get_handshake_hash(&self) -> [u8; HASHLEN] {
-        self.h
-    }
+    // pub fn get_handshake_hash(&self) -> [u8; HASHLEN] {
+    //     self.h
+    // }
 
     pub fn encrypt_and_hash(&mut self, plaintext: &[u8]) -> Vec<u8> {
         let ciphertext = self.cipher_state.encrypt_with_ad(&self.h, plaintext);
@@ -178,21 +179,20 @@ impl SymmetricState {
         (output1, output2)
     }
 
-    fn hkdf_3(&self, input_key_material: &[u8]) -> ([u8; HASHLEN], [u8; HASHLEN], [u8; HASHLEN]) {
-        let temp_key = hmac(&self.ck, input_key_material);
-        let output1 = hmac(&temp_key, &[0x01]);
+    // fn hkdf_3(&self, input_key_material: &[u8]) -> ([u8; HASHLEN], [u8; HASHLEN], [u8; HASHLEN]) {
+    //     let temp_key = hmac(&self.ck, input_key_material);
+    //     let output1 = hmac(&temp_key, &[0x01]);
 
-        let mut next_input = vec![0x02; HASHLEN + 1];
-        next_input[..HASHLEN].copy_from_slice(&output1);
-        let output2 = hmac(&temp_key, &next_input);
+    //     let mut next_input = vec![0x02; HASHLEN + 1];
+    //     next_input[..HASHLEN].copy_from_slice(&output1);
+    //     let output2 = hmac(&temp_key, &next_input);
 
-        let mut next_input = vec![0x03; HASHLEN + 1];
-        next_input[..HASHLEN].copy_from_slice(&output2);
-        let output3 = hmac(&temp_key, &next_input);
+    //     let mut next_input = vec![0x03; HASHLEN + 1];
+    //     next_input[..HASHLEN].copy_from_slice(&output2);
+    //     let output3 = hmac(&temp_key, &next_input);
 
-        (output1, output2, output3)
-    }
-    
+    //     (output1, output2, output3)
+    // }
 }
 
 pub struct HandshakeState {

@@ -1,9 +1,11 @@
-use merkle_light::hash::{Algorithm, Hashable};
 use optee_utee::{AlgorithmId, Digest};
+use proto::HASHLEN;
+
 use std::default::Default;
 use std::hash::Hasher;
-use optee_utee::trace_println;
-use proto::HASHLEN;
+use std::convert::TryInto;
+
+use merkle_light::hash::Algorithm;
 
 pub struct HashAlgorithm {
     op: Digest,
@@ -27,8 +29,7 @@ impl Hasher for HashAlgorithm {
     fn finish(&self) -> u64 {
         let mut hash = [0u8; HASHLEN];
         let length = self.op.do_final(&[], &mut hash).unwrap();
-        let h = &hash[..length];
-        0
+        length.try_into().unwrap()
     }
 }
 

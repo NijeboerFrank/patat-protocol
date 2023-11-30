@@ -17,41 +17,30 @@
 
 #![no_main]
 
-use merkle_light::merkle::MerkleTree;
+// OP-TEE
 use optee_utee::{
     ta_close_session, ta_create, ta_destroy, ta_invoke_command, ta_open_session, trace_println,
 };
 use optee_utee::{Error, ErrorKind, Parameters, Result};
 use proto::{Command, HASHLEN};
 
-use crate::x25519::{PublicKey, ReusableSecret, StaticSecret};
+// std
+use std::iter::FromIterator;
+use std::hash::Hasher;
 
-use crate::noise::{hmac, CipherState, hash, HandshakeState};
-use crate::random::PatatRng;
+// libraries
+use merkle_light::merkle::MerkleTree;
+use merkle_light::hash::Algorithm;
 
-mod hasher;
-mod noise;
-mod x25519;
-mod random;
-mod patat_participant;
+// TA Code
+use ta::x25519::{PublicKey, StaticSecret};
+use ta::noise::HandshakeState;
+use ta::random::PatatRng;
+use ta::hasher::HashAlgorithm;
+use ta::patat_participant::PatatRelyingParty;
 
-fn enc_dec() {
-    let mut c1 = CipherState::initialize_key(Some([1u8; 32]));
-    let mut c2 = CipherState::initialize_key(Some([1u8; 32]));
-
-    let cipher = c1.encrypt_with_ad(&[0u8; 32], "test".as_bytes());
-    trace_println!("ciphertext {:?}", &cipher);
-    let plain = c2.decrypt_with_ad(&[0u8; 32], &cipher);
-    trace_println!("plaintext {:?}", &plain);
-}
 
 fn gather_evidence() -> [u8; HASHLEN] {
-    use hasher::HashAlgorithm;
-    use merkle_light::hash::Algorithm;
-    use std::iter::FromIterator;
-    use std::hash::Hasher;
-
-    enc_dec();
 
     let mut h1 = [0u8; HASHLEN];
     let mut h2 = [0u8; HASHLEN];
@@ -60,30 +49,18 @@ fn gather_evidence() -> [u8; HASHLEN] {
     h2[0] = 0x22;
     h3[0] = 0x33;
 
-    let mut hasher = HashAlgorithm::new();
-    hasher.write("test".as_bytes());
-    trace_println!("[+] hash {:?}", hasher.hash());
-
-    trace_println!("[+] other hash {:?}", hash("test".as_bytes()));
-
-    let pass = "testtesttesttesttesttesttesttest".as_bytes();
-    let mut pass_buffer: [u8; 32] = [0u8; 32];
-    pass_buffer.clone_from_slice(&pass);
-
-    trace_println!("[+] hmac {:?}", hmac(&pass_buffer, "test".as_bytes()));
-
     let tree: MerkleTree<[u8; HASHLEN], HashAlgorithm> = MerkleTree::from_iter(vec![h1, h2, h3]);
     trace_println!("[+] {:?}", tree.root());
 
-    let mut h1 = [0u8; HASHLEN];
+    let h1 = [0u8; HASHLEN];
     h1
 }
 
 fn attest() {
     trace_println!("[+] TA Attest");
-    let mut ta_secret = StaticSecret::new(PatatRng);
-    let mut server_secret = StaticSecret::new(PatatRng);
-    let mut pubkey = PublicKey::from(&server_secret);
+    let ta_secret = StaticSecret::new(PatatRng);
+    let server_secret = StaticSecret::new(PatatRng);
+    let pubkey = PublicKey::from(&server_secret);
     trace_println!("State");
 
     let mut handshake_state = HandshakeState::initialize(ta_secret, Some(pubkey));
@@ -106,6 +83,10 @@ fn attest() {
     trace_println!("payload {:?}", &payload);
     trace_println!("decrypted payload {:?}", &decrypted);
     gather_evidence();
+
+    let server_secret = StaticSecret::new(PatatRng);
+    let patat_participant = PatatRelyingParty::new(server_secret);
+    patat_participant.connect();
 }
 
 #[ta_create]
