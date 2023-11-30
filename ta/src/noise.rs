@@ -5,6 +5,7 @@ use optee_utee::{
 
 use proto::{DHLEN, HASHLEN};
 
+use std::borrow::BorrowMut;
 use std::convert::TryInto;
 use std::hash::Hasher;
 
@@ -59,7 +60,7 @@ impl CipherState {
     //     self.k.is_some()
     // }
 
-    pub fn encrypt_with_ad(&mut self, ad: &[u8; HASHLEN], plaintext: &[u8]) -> Vec<u8> {
+    pub fn encrypt_with_ad(&mut self, ad: &[u8], plaintext: &[u8]) -> Vec<u8> {
         match self.k {
             Some(k) => {
                 let key = Key::from_slice(&k);
@@ -87,7 +88,7 @@ impl CipherState {
         }
     }
 
-    pub fn decrypt_with_ad(&mut self, ad: &[u8; HASHLEN], ciphertext: &[u8]) -> Vec<u8> {
+    pub fn decrypt_with_ad(&mut self, ad: &[u8], ciphertext: &[u8]) -> Vec<u8> {
         match self.k {
             Some(k) => {
                 let key = Key::from_slice(&k);
@@ -178,20 +179,28 @@ impl SymmetricState {
         (output1, output2)
     }
 
-    // fn hkdf_3(&self, input_key_material: &[u8]) -> ([u8; HASHLEN], [u8; HASHLEN], [u8; HASHLEN]) {
-    //     let temp_key = hmac(&self.ck, input_key_material);
-    //     let output1 = hmac(&temp_key, &[0x01]);
+    fn hkdf_3(&self, input_key_material: &[u8]) -> ([u8; HASHLEN], [u8; HASHLEN], [u8; HASHLEN]) {
+        let temp_key = hmac(&self.ck, input_key_material);
+        let output1 = hmac(&temp_key, &[0x01]);
 
-    //     let mut next_input = vec![0x02; HASHLEN + 1];
-    //     next_input[..HASHLEN].copy_from_slice(&output1);
-    //     let output2 = hmac(&temp_key, &next_input);
+        let mut next_input = vec![0x02; HASHLEN + 1];
+        next_input[..HASHLEN].copy_from_slice(&output1);
+        let output2 = hmac(&temp_key, &next_input);
 
-    //     let mut next_input = vec![0x03; HASHLEN + 1];
-    //     next_input[..HASHLEN].copy_from_slice(&output2);
-    //     let output3 = hmac(&temp_key, &next_input);
+        let mut next_input = vec![0x03; HASHLEN + 1];
+        next_input[..HASHLEN].copy_from_slice(&output2);
+        let output3 = hmac(&temp_key, &next_input);
 
-    //     (output1, output2, output3)
-    // }
+        (output1, output2, output3)
+    }
+
+    pub fn split(&self) -> (CipherState, CipherState) {
+        let (temp_k1, temp_k2) = self.hkdf_2(&[]);
+        (
+            CipherState::initialize_key(Some(temp_k1)),
+            CipherState::initialize_key(Some(temp_k2)),
+        )
+    }
 }
 
 pub struct HandshakeState {
@@ -200,6 +209,7 @@ pub struct HandshakeState {
     e: Option<ReusableSecret>,
     rs: Option<PublicKey>,
     re: Option<PublicKey>,
+    transport_mode_states: Option<(CipherState, CipherState)>,
 }
 
 impl HandshakeState {
@@ -224,6 +234,7 @@ impl HandshakeState {
             e: None,
             rs,
             re: None,
+            transport_mode_states: None,
         }
     }
 
@@ -378,5 +389,29 @@ impl HandshakeState {
         payload_buffer.extend_from_slice(&plaintext);
 
         payload_buffer
+    }
+
+    pub fn to_transport_mode(&mut self) {
+        self.transport_mode_states = Some(self.symmetric_state.split());
+    }
+
+    pub fn encrypt(&mut self, payload: &[u8]) -> Vec<u8> {
+        if self.transport_mode_states.is_none() {
+            panic!()
+        }
+        let mut ts = self.transport_mode_states.take();
+        let ret = ts.as_mut().unwrap().0.encrypt_with_ad(&[], payload);
+        self.transport_mode_states = ts;
+        ret
+    }
+
+    pub fn decrypt(&mut self, payload: &[u8]) -> Vec<u8> {
+        if self.transport_mode_states.is_none() {
+            panic!()
+        }
+        let mut ts = self.transport_mode_states.take();
+        let ret = ts.as_mut().unwrap().1.decrypt_with_ad(&[], payload);
+        self.transport_mode_states = ts;
+        ret
     }
 }
