@@ -41,8 +41,10 @@ impl PatatTA {
         stream.write_all(&payload).unwrap();
 
         handshake_state.to_transport_mode();
-        let cipher = handshake_state.encrypt(b"test");
-        trace_println!("cipher {:?}", cipher);
+        let payload = handshake_state.encrypt(b"test");
+        let message_length_buffer = [(payload.len() >> 8) as u8, (payload.len() & 0xff) as u8];
+        stream.write_all(&message_length_buffer).unwrap();
+        stream.write_all(&payload).unwrap();
         PatatTA {}
     }
 }

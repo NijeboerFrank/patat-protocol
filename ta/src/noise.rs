@@ -400,7 +400,7 @@ impl HandshakeState {
             panic!()
         }
         let mut ts = self.transport_mode_states.take();
-        let ret = ts.as_mut().unwrap().0.encrypt_with_ad(&[], payload);
+        let ret = ts.as_mut().unwrap().0.encrypt_with_ad(&[0u8; 0], payload);
         self.transport_mode_states = ts;
         ret
     }
@@ -410,7 +410,7 @@ impl HandshakeState {
             panic!()
         }
         let mut ts = self.transport_mode_states.take();
-        let ret = ts.as_mut().unwrap().1.decrypt_with_ad(&[], payload);
+        let ret = ts.as_mut().unwrap().1.decrypt_with_ad(&[0u8; 0], payload);
         self.transport_mode_states = ts;
         ret
     }
