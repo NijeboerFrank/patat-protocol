@@ -34,55 +34,14 @@ use merkle_light::hash::Algorithm;
 use merkle_light::merkle::MerkleTree;
 
 // TA Code
-use ta::hasher::HashAlgorithm;
+use ta::evidence::{get_evidence, EvidenceProof};
+use ta::hasher::PatatHashAlgorithm;
 use ta::noise::HandshakeState;
 use ta::patat_participant::PatatTA;
 use ta::random::PatatRng;
 use ta::x25519::{PublicKey, StaticSecret};
 
-fn gather_evidence() -> [u8; HASHLEN] {
-    let mut h1 = [0u8; HASHLEN];
-    let mut h2 = [0u8; HASHLEN];
-    let mut h3 = [0u8; HASHLEN];
-    h1[0] = 0x11;
-    h2[0] = 0x22;
-    h3[0] = 0x33;
-
-    let tree: MerkleTree<[u8; HASHLEN], HashAlgorithm> = MerkleTree::from_iter(vec![h1, h2, h3]);
-    trace_println!("[+] {:?}", tree.root());
-
-    let h1 = [0u8; HASHLEN];
-    h1
-}
-
 fn attest() {
-    // trace_println!("[+] TA Attest");
-    // let ta_secret = StaticSecret::new(PatatRng);
-    // let server_secret = StaticSecret::new(PatatRng);
-    // let pubkey = PublicKey::from(&server_secret);
-    // trace_println!("State");
-
-    // let mut handshake_state = HandshakeState::initialize(ta_secret, Some(pubkey));
-    // let mut handshake_state_receiver = HandshakeState::initialize(server_secret, None);
-    // let payload = handshake_state.write_message_1("test".as_bytes());
-    // let decrypted = handshake_state_receiver.read_message_1(&payload);
-    // trace_println!("done");
-    // trace_println!("payload {:?}", &payload);
-    // trace_println!("decrypted payload {:?}", &decrypted);
-
-    // let payload = handshake_state_receiver.write_message_2("test".as_bytes());
-    // let decrypted = handshake_state.read_message_2(&payload);
-    // trace_println!("done again");
-    // trace_println!("payload {:?}", &payload);
-    // trace_println!("decrypted payload {:?}", &decrypted);
-
-    // let payload = handshake_state_receiver.write_message_3("test".as_bytes());
-    // let decrypted = handshake_state.read_message_3(&payload);
-    // trace_println!("done again");
-    // trace_println!("payload {:?}", &payload);
-    // trace_println!("decrypted payload {:?}", &decrypted);
-    // gather_evidence();
-
     let ta_secret = StaticSecret::new(PatatRng);
     let key_bytes: [u8; 32] = "very-secure-password-for-frieten"
         .as_bytes()
@@ -90,7 +49,10 @@ fn attest() {
         .unwrap();
     let server_secret = StaticSecret::from(key_bytes);
     let pubkey = PublicKey::from(&server_secret);
-    PatatTA::connect(ta_secret, pubkey);
+    let mut ta = PatatTA::connect(ta_secret, pubkey);
+    let evidence = get_evidence();
+
+    ta.send_evidence(evidence);
 }
 
 #[ta_create]

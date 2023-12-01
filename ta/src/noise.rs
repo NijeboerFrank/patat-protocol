@@ -13,7 +13,7 @@ use chacha20poly1305::aead::{Aead, NewAead, Payload};
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use merkle_light::hash::Algorithm;
 
-use crate::hasher::HashAlgorithm;
+use crate::hasher::PatatHashAlgorithm;
 use crate::random::PatatRng;
 use crate::x25519::{PublicKey, ReusableSecret, StaticSecret};
 
@@ -39,7 +39,7 @@ pub fn hmac(key: &[u8; HASHLEN], data: &[u8]) -> [u8; HASHLEN] {
 }
 
 pub fn hash(data: &[u8]) -> [u8; HASHLEN] {
-    let mut hasher = HashAlgorithm::new();
+    let mut hasher = PatatHashAlgorithm::new();
     hasher.write(data);
     hasher.hash()
 }

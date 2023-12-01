@@ -1,25 +1,25 @@
 use optee_utee::{AlgorithmId, Digest};
 use proto::HASHLEN;
 
+use std::convert::TryInto;
 use std::default::Default;
 use std::hash::Hasher;
-use std::convert::TryInto;
 
 use merkle_light::hash::Algorithm;
 
-pub struct HashAlgorithm {
+pub struct PatatHashAlgorithm {
     op: Digest,
 }
 
-impl HashAlgorithm {
-    pub fn new() -> HashAlgorithm {
-        HashAlgorithm {
+impl PatatHashAlgorithm {
+    pub fn new() -> PatatHashAlgorithm {
+        PatatHashAlgorithm {
             op: Digest::allocate(AlgorithmId::Sha256).unwrap(),
         }
     }
 }
 
-impl Hasher for HashAlgorithm {
+impl Hasher for PatatHashAlgorithm {
     #[inline]
     fn write(&mut self, msg: &[u8]) {
         self.op.update(msg);
@@ -33,13 +33,13 @@ impl Hasher for HashAlgorithm {
     }
 }
 
-impl Default for HashAlgorithm {
-    fn default() -> HashAlgorithm {
-        HashAlgorithm::new()
+impl Default for PatatHashAlgorithm {
+    fn default() -> PatatHashAlgorithm {
+        PatatHashAlgorithm::new()
     }
 }
 
-impl Algorithm<[u8; HASHLEN]> for HashAlgorithm {
+impl Algorithm<[u8; HASHLEN]> for PatatHashAlgorithm {
     #[inline]
     fn hash(&mut self) -> [u8; HASHLEN] {
         let mut h = [0u8; HASHLEN];
