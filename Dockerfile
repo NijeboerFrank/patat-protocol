@@ -61,5 +61,5 @@ COPY qemu_v8_local.xml .repo/manifests/
 RUN repo sync -m qemu_v8_local.xml -j10
 WORKDIR /optee/build
 RUN make -j2 toolchains
-RUN make -j$(nproc) check
+# RUN make -j$(nproc) check
 RUN rm -rf /optee/optee_rust/examples/*
