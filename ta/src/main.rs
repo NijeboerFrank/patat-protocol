@@ -49,10 +49,10 @@ fn attest() {
         .unwrap();
     let server_secret = StaticSecret::from(key_bytes);
     let pubkey = PublicKey::from(&server_secret);
-    let mut ta = PatatTA::connect(ta_secret, pubkey);
-    let evidence = get_evidence();
+    // let mut ta = PatatTA::connect(ta_secret, pubkey);
+    // let evidence = get_evidence();
 
-    ta.send_evidence(evidence);
+    // ta.send_evidence(evidence);
 }
 
 #[ta_create]

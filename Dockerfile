@@ -56,7 +56,9 @@ RUN apt install -y \
 RUN curl https://storage.googleapis.com/git-repo-downloads/repo > /bin/repo && chmod a+x /bin/repo
 RUN mkdir /optee
 WORKDIR /optee
-RUN repo init -u https://github.com/OP-TEE/manifest.git -m qemu_v8.xml && repo sync -j10
+RUN repo init -u https://github.com/OP-TEE/manifest.git 
+COPY qemu_v8_local.xml .repo/manifests/
+RUN repo sync -m qemu_v8_local.xml -j10
 WORKDIR /optee/build
 RUN make -j2 toolchains
 RUN make -j$(nproc) check
