@@ -5,6 +5,7 @@ use merkle_light::proof::Proof;
 use std::convert::TryInto;
 use std::hash::Hasher;
 use std::iter::FromIterator;
+use optee_utee::trace_println;
 
 pub struct EvidencePath(Vec<u8>);
 
@@ -173,14 +174,9 @@ impl From<&[u8]> for EvidenceProof {
     }
 }
 
-pub fn get_evidence() -> EvidenceProof {
-    let mut h1 = [0u8; 32];
-    let mut h2 = [0u8; 32];
-    let mut h3 = [0u8; 32];
-    h1[0] = 0x11;
-    h2[0] = 0x22;
-    h3[0] = 0x33;
-    let t: MerkleTree<[u8; 32], PatatHashAlgorithm> = MerkleTree::from_iter(vec![h1, h2, h3]);
+pub fn get_evidence(evidence: Vec<[u8; 32]>) -> EvidenceProof {
+    trace_println!("Evidence: {:?}", evidence);
+    let t: MerkleTree<[u8; 32], PatatHashAlgorithm> = MerkleTree::from_iter(evidence);
     let p = t.gen_proof(0);
     EvidenceProof::new(p.path().to_vec(), p.lemma().to_vec())
 }

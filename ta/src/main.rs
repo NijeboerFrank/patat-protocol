@@ -41,7 +41,14 @@ use ta::patat_participant::PatatTA;
 use ta::random::PatatRng;
 use ta::x25519::{PublicKey, StaticSecret};
 
-fn attest() {
+fn attest(params: &mut Parameters) {
+    let mut file_hash = unsafe { params.0.as_memref().unwrap() };
+    let file_hash: [u8; 32] = file_hash.buffer()[0..32].try_into().unwrap();
+    let mut version_id = unsafe { params.1.as_memref().unwrap() };
+    let version_id: [u8; 32] = version_id.buffer()[0..32].try_into().unwrap();
+    let mut manufacturer_hash = unsafe { params.2.as_memref().unwrap() };
+    let manufacturer_hash: [u8; 32] = manufacturer_hash.buffer()[0..32].try_into().unwrap();
+
     let ta_secret = StaticSecret::new(PatatRng);
     let key_bytes: [u8; 32] = "very-secure-password-for-frieten"
         .as_bytes()
@@ -50,9 +57,9 @@ fn attest() {
     let server_secret = StaticSecret::from(key_bytes);
     let pubkey = PublicKey::from(&server_secret);
     let mut ta = PatatTA::connect(ta_secret, pubkey);
-    let evidence = get_evidence();
 
-    ta.send_evidence(evidence);
+    // let evidence = get_evidence(vec![file_hash, version_id, manufacturer_hash]);
+    // ta.send_evidence(evidence);
 }
 
 #[ta_create]
@@ -78,11 +85,11 @@ fn destroy() {
 }
 
 #[ta_invoke_command]
-fn invoke_command(cmd_id: u32, _params: &mut Parameters) -> Result<()> {
+fn invoke_command(cmd_id: u32, params: &mut Parameters) -> Result<()> {
     trace_println!("[+] TA invoke command");
     match Command::from(cmd_id) {
         Command::RunAttested => {
-            attest();
+            attest(params);
             Ok(())
         }
         Command::RunWithoutAttestation => Ok(()),
