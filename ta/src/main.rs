@@ -22,33 +22,40 @@ use optee_utee::{
     ta_close_session, ta_create, ta_destroy, ta_invoke_command, ta_open_session, trace_println,
 };
 use optee_utee::{Error, ErrorKind, Parameters, Result};
-use proto::{Command, HASHLEN};
+use proto::Command;
 
 // std
 use std::convert::TryInto;
-use std::hash::Hasher;
-use std::iter::FromIterator;
 
 // libraries
-use merkle_light::hash::Algorithm;
-use merkle_light::merkle::MerkleTree;
+use rand_core::RngCore;
 
 // TA Code
-use ta::evidence::{get_evidence, EvidenceProof};
-use ta::hasher::PatatHashAlgorithm;
-use ta::noise::HandshakeState;
+use ta::evidence::get_evidence;
 use ta::patat_participant::PatatTA;
 use ta::random::PatatRng;
 use ta::x25519::{PublicKey, StaticSecret};
 
-fn attest(params: &mut Parameters) {
-    let mut file_hash = unsafe { params.0.as_memref().unwrap() };
-    let file_hash: [u8; 32] = file_hash.buffer()[0..32].try_into().unwrap();
-    let mut version_id = unsafe { params.1.as_memref().unwrap() };
-    let version_id: [u8; 32] = version_id.buffer()[0..32].try_into().unwrap();
-    let mut manufacturer_hash = unsafe { params.2.as_memref().unwrap() };
-    let manufacturer_hash: [u8; 32] = manufacturer_hash.buffer()[0..32].try_into().unwrap();
+fn simulate_evidence_fetching() -> Vec<[u8; 32]> {
+    let mut rng = PatatRng {};
+    let mut data1 = [0u8; 32];
+    rng.fill_bytes(&mut data1);
 
+    let version = [0u8; 32];
+    let manufacturer_hash = [0u8; 32];
+    let hardware_revision = [0u8; 32];
+    let file_hash = [0u8; 32];
+
+    vec![
+        data1,
+        version,
+        manufacturer_hash,
+        hardware_revision,
+        file_hash,
+    ]
+}
+
+fn attest(params: &mut Parameters) {
     let ta_secret = StaticSecret::new(PatatRng);
     let key_bytes: [u8; 32] = "very-secure-password-for-frieten"
         .as_bytes()
@@ -56,10 +63,11 @@ fn attest(params: &mut Parameters) {
         .unwrap();
     let server_secret = StaticSecret::from(key_bytes);
     let pubkey = PublicKey::from(&server_secret);
+
     let mut ta = PatatTA::connect(ta_secret, pubkey);
 
-    // let evidence = get_evidence(vec![file_hash, version_id, manufacturer_hash]);
-    // ta.send_evidence(evidence);
+    let evidence = get_evidence(simulate_evidence_fetching());
+    ta.send_evidence(evidence);
 }
 
 #[ta_create]

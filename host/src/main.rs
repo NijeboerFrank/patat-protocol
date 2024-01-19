@@ -15,37 +15,35 @@
 // specific language governing permissions and limitations
 // under the License.
 
-use optee_teec::{Context, Operation, ParamType, ParamTmpRef, Session, Uuid};
+use optee_teec::{Context, Operation, ParamTmpRef, ParamType, Session, Uuid};
 use optee_teec::{ParamNone, ParamValue};
-use proto::{UUID, Command};
+use proto::{Command, UUID};
 use std::default::Default;
 use std::time::Instant;
 
+/// Run the Proof of Concept TEE.
+///
+/// In the TEE, attest the application to an attestation server.
 fn run_tee(session: &mut Session) -> optee_teec::Result<()> {
-    let mut file_hash = ParamTmpRef::new_input(&[0u8; 32]); 
-    let mut version_id = ParamTmpRef::new_input(&[0u8; 32]); 
-    let mut manufacturer_hash = ParamTmpRef::new_input(&[0u8; 32]); 
-
-    let mut operation = Operation::new(0, file_hash, version_id, manufacturer_hash, ParamNone);
-
-    println!("Invoking command");
+    let mut operation = Operation::new(0, ParamNone, ParamNone, ParamNone, ParamNone);
     session.invoke_command(Command::RunAttested as u32, &mut operation)?;
     Ok(())
 }
 
+/// The main run method
 fn run() -> optee_teec::Result<()> {
     let mut ctx = Context::new()?;
     let uuid = Uuid::parse_str(UUID).unwrap();
     let mut session = ctx.open_session(uuid)?;
 
-    let now = Instant::now();
+    for _ in 0..10 {
+        let now = Instant::now();
+        run_tee(&mut session)?;
+        let elapsed = now.elapsed();
+        println!("Elapsed: {} ms", elapsed.as_millis());
+    }
 
-    run_tee(&mut session)?;
-
-    let elapsed = now.elapsed();
-    println!("Elapsed: {} ms", elapsed.as_millis());
-
-    println!("Success");
+    println!("Done");
     Ok(())
 }
 

@@ -27,17 +27,22 @@ impl PatatTA {
     pub fn connect(ta_secret: StaticSecret, server_pubkey: PublicKey) -> Self {
         // The address of the Host in QEMU is 10.0.2.2
         let mut stream = TcpStream::connect("10.0.2.2", 65432).unwrap();
+        trace_println!("Connecting to the server");
 
         // Handshake start
         let mut handshake_state = HandshakeState::initialize(ta_secret, Some(server_pubkey));
+        trace_println!("Handshake started");
 
         // Message 1
         let payload = handshake_state.write_message_1("test".as_bytes());
+        trace_println!("Got payload");
         Self::send_message(&mut stream, &payload);
+        trace_println!("Sent 1");
 
         // Message 2
         let payload = Self::receive_message(&mut stream);
         let decrypted = handshake_state.read_message_2(&payload);
+        trace_println!("Received 2");
 
         // Message 3
         let payload = handshake_state.write_message_3("test".as_bytes());
@@ -47,7 +52,9 @@ impl PatatTA {
         handshake_state.to_transport_mode();
         let payload = handshake_state.encrypt(b"test");
         Self::send_message(&mut stream, &payload);
+        trace_println!("Sent 3");
 
+        trace_println!("Waiting to receive message");
         // Receive in transport state
         let payload = Self::receive_message(&mut stream);
         let decrypted = handshake_state.decrypt(&payload);

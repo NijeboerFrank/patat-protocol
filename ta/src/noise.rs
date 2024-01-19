@@ -21,10 +21,10 @@ pub fn hmac(key: &[u8; HASHLEN], data: &[u8]) -> [u8; HASHLEN] {
     let mut out = [0u8; HASHLEN];
 
     match Mac::allocate(AlgorithmId::HmacSha256, HASHLEN * 8) {
-        Err(e) => panic!(e),
+        Err(e) => panic!("{}", e),
         Ok(mac) => {
             match TransientObject::allocate(TransientObjectType::HmacSha256, key.len() * 8) {
-                Err(e) => panic!(e),
+                Err(e) => panic!("{}", e),
                 Ok(mut key_object) => {
                     let attr = AttributeMemref::from_ref(AttributeId::SecretValue, key);
                     key_object.populate(&[attr.into()]).unwrap();
