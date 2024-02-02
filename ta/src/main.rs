@@ -36,23 +36,30 @@ use ta::patat_participant::PatatTA;
 use ta::random::PatatRng;
 use ta::x25519::{PublicKey, StaticSecret};
 
-fn simulate_evidence_fetching() -> Vec<[u8; 32]> {
+fn simulate_evidence_fetching(iterations: u32) -> Vec<[u8; 32]> {
+    let mut return_value = vec![];
     let mut rng = PatatRng {};
-    let mut data1 = [0u8; 32];
-    rng.fill_bytes(&mut data1);
 
-    let version = [0u8; 32];
-    let manufacturer_hash = [0u8; 32];
-    let hardware_revision = [0u8; 32];
-    let file_hash = [0u8; 32];
+    for _ in 0..iterations {
+	let mut data1 = [0u8; 32];
+	rng.fill_bytes(&mut data1);
 
-    vec![
-        data1,
-        version,
-        manufacturer_hash,
-        hardware_revision,
-        file_hash,
-    ]
+	let version = [0u8; 32];
+	let manufacturer_hash = [0u8; 32];
+	let hardware_revision = [0u8; 32];
+	let file_hash = [0u8; 32];
+
+	let mut iteration = vec![
+            data1,
+            version,
+            manufacturer_hash,
+            hardware_revision,
+            file_hash,
+	];
+
+	return_value.append(&mut iteration);
+    }
+    return_value
 }
 
 fn attest(params: &mut Parameters) {
@@ -66,7 +73,7 @@ fn attest(params: &mut Parameters) {
 
     let mut ta = PatatTA::connect(ta_secret, pubkey);
 
-    let evidence = get_evidence(simulate_evidence_fetching());
+    let evidence = get_evidence(simulate_evidence_fetching(15));
     ta.send_evidence(evidence);
 }
 
@@ -99,7 +106,7 @@ fn invoke_command(cmd_id: u32, params: &mut Parameters) -> Result<()> {
         Command::RunAttested => {
             attest(params);
             Ok(())
-        }
+        } 
         Command::RunWithoutAttestation => Ok(()),
         _ => Err(Error::new(ErrorKind::BadParameters)),
     }

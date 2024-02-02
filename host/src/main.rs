@@ -36,7 +36,7 @@ fn run() -> optee_teec::Result<()> {
     let uuid = Uuid::parse_str(UUID).unwrap();
     let mut session = ctx.open_session(uuid)?;
 
-    for _ in 0..10 {
+    for _ in 0..1000 {
         let now = Instant::now();
         run_tee(&mut session)?;
         let elapsed = now.elapsed();
