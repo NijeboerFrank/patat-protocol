@@ -26,7 +26,7 @@ use std::time::Instant;
 /// In the TEE, attest the application to an attestation server.
 fn run_tee(session: &mut Session) -> optee_teec::Result<()> {
     let mut operation = Operation::new(0, ParamNone, ParamNone, ParamNone, ParamNone);
-    session.invoke_command(Command::RunAttested as u32, &mut operation)?;
+    session.invoke_command(Command::RunWithoutAttestation as u32, &mut operation)?;
     Ok(())
 }
 
