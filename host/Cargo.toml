@@ -1,0 +1,12 @@
+[package]
+name = "patat-protocol-rs"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+libc = "0.2.48"
+proto = { path = "../proto" }
+optee-teec = { path = "../../../optee-teec" }
+
+[profile.release]
+lto = true
