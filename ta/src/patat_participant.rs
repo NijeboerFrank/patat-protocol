@@ -68,6 +68,7 @@ impl PatatTA {
     pub fn send_evidence(&mut self, evidence: EvidenceProof) {
         let evidence_bytes: Vec<u8> = evidence.into();
         let payload = self.handshake_state.encrypt(&evidence_bytes);
+        trace_println!("Payload bytes \"{}\"", payload.len());
         Self::send_message(&mut self.stream, &payload);
     }
 
